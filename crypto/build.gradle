@@ -15,9 +15,5 @@
 
 dependencies {
     compile project(":binary")
-    compile project(":encoding")
-    compile project(":hash")
-    compile project(":math")
-
-    compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    compile project(":natives")
 }
