@@ -16,6 +16,7 @@
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.natives.NativeCode;
 import net.daporkchop.lib.natives.PNatives;
 import net.daporkchop.lib.natives.zlib.PDeflater;
 import net.daporkchop.lib.natives.zlib.PInflater;
@@ -31,6 +32,10 @@ public class NativeTests {
     private static final int SIZE = 67108864; //64 MiB
 
     public static void main(String... args) throws IOException {
+        if (!PNatives.ZLIB.isNative())  {
+            throw new IllegalStateException("Not using native zlib!");
+        }
+
         ByteBuf orig = Unpooled.directBuffer(SIZE).writerIndex(SIZE);
         for (int i = 0; i < SIZE; i++) {
             orig.setByte(i, ThreadLocalRandom.current().nextInt(8));

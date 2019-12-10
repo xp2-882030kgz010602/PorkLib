@@ -27,6 +27,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Supplier;
 
 /**
@@ -36,59 +39,82 @@ import java.util.function.Supplier;
  * @author DaPorkchop_
  */
 public final class NativeCode<T> implements Supplier<T> {
-    private static String LIB_ARCH;
-    private static String LIB_EXT;
+    private static final String LIB_ARCH;
+    private static final String LIB_EXT;
 
-    public static void loadNativeLibrary(@NonNull String name)  {
-        if (!NativeImpl.AVAILABLE)  {
-            throw new UnsupportedOperationException("native libraries are not available!");
-        } else if (LIB_ARCH == null)  {
-            synchronized (NativeCode.class) {
-                if (LIB_ARCH == null) {
-                    switch (PlatformInfo.OPERATING_SYSTEM)  {
-                        case Linux:
-                            LIB_EXT = "so";
-                            switch (PlatformInfo.ARCHITECTURE)  {
-                                case x86_64:
-                                    LIB_ARCH = "x86_64-linux-gnu";
-                                    break;
-                                case x86:
-                                    LIB_ARCH = "x86-linux-gnu";
-                                    break;
-                            }
-                            break;
-                        case Windows:
-                            if (PlatformInfo.ARCHITECTURE == Architecture.x86_64)   {
-                                LIB_EXT = "dll";
-                                LIB_ARCH = "x86_64-w64-mingw32";
-                            }
-                            break;
-                    }
-                    if (LIB_ARCH == null || LIB_EXT == null)    {
-                        throw new IllegalStateException();
-                    }
+    private static final Collection<String> LOADED_LIBS = Collections.synchronizedCollection(new ArrayList<>());
+
+    static {
+        String arch = null;
+        String ext = null;
+
+        switch (PlatformInfo.OPERATING_SYSTEM) {
+            case Linux:
+                ext = "so";
+                switch (PlatformInfo.ARCHITECTURE) {
+                    case x86_64:
+                        arch = "x86_64-linux-gnu";
+                        break;
+                    case x86:
+                        arch = "x86-linux-gnu";
+                        break;
                 }
-            }
+                break;
+            case Windows:
+                ext = "dll";
+                if (PlatformInfo.ARCHITECTURE == Architecture.x86_64) {
+                    arch = "x86_64-w64-mingw32";
+                }
+                break;
         }
-        try {
-            File file = File.createTempFile(String.format("%s-%s-", name, LIB_ARCH), String.format(".%s", LIB_EXT));
+
+        LIB_ARCH = arch;
+        LIB_EXT = ext;
+    }
+
+    public synchronized static boolean loadNativeLibrary(@NonNull String libname) {
+        if (LOADED_LIBS.contains(libname))  {
+            return true;
+        }
+
+        String libPath = getLibraryPath(libname);
+        if (libPath == null)    {
+            //throw new IllegalStateException(String.format("native libraries are not supported on %s:%s", PlatformInfo.OPERATING_SYSTEM, PlatformInfo.ARCHITECTURE));
+            return false;
+        }
+
+        try (InputStream in = NativeCode.class.getResourceAsStream(libPath))    {
+            if (in == null) {
+                return false;
+            }
+
+            File file = File.createTempFile(String.format("%s-%s-", libname, LIB_ARCH), String.format(".%s", LIB_EXT));
             file.deleteOnExit();
-            try (InputStream is = NativeCode.class.getResourceAsStream(String.format("/%s/lib%s.%s", LIB_ARCH, name, LIB_EXT));
-                 OutputStream os = new FileOutputStream(file))   {
+
+            try (OutputStream out = new FileOutputStream(file)) {
                 byte[] arr = new byte[PUnsafe.pageSize()];
-                for (int b; (b = is.read(arr)) >= 0; os.write(arr, 0, b));
+                for (int b; (b = in.read(arr)) >= 0; out.write(arr, 0, b)) ;
             }
             System.load(file.getAbsolutePath());
-        } catch (Exception e)    {
-            throw new RuntimeException(String.format("Unable to load library \"%s\"", name), e);
+            LOADED_LIBS.add(libname);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Unable to load library \"%s\"", libname), e);
         }
     }
 
-    private final Impl<T> implementation;
+    public static String getLibraryPath(@NonNull String libname) {
+        return LIB_ARCH != null && LIB_EXT != null ? String.format("/%s/lib%s.%s", LIB_ARCH, libname, LIB_EXT) : null;
+    }
+
+    private Supplier<Impl<T>>[] implementations;
+    private Impl<T> implementation;
 
     @SafeVarargs
-    public NativeCode(@NonNull Supplier<Impl<T>>... implementationFactories) {
-        for (Supplier<Impl<T>> implementationFactory : implementationFactories) {
+    public NativeCode(@NonNull Supplier<Impl<T>>... implementations) {
+        this.implementations = implementations;
+
+        for (Supplier<Impl<T>> implementationFactory : implementations) {
             Impl<T> implementation = implementationFactory.get();
             if (implementation.available()) {
                 this.implementation = implementation;
@@ -96,19 +122,38 @@ public final class NativeCode<T> implements Supplier<T> {
             }
         }
 
-        throw new IllegalStateException("No implementations found!");
     }
 
     @Override
     public T get() {
-        return this.implementation.get();
+        if (this.implementations != null) {
+            synchronized (this) {
+                if (this.implementations != null) {
+                    for (Supplier<Impl<T>> implementationFactory : this.implementations) {
+                        Impl<T> implementation = implementationFactory.get();
+                        if (implementation.available()) {
+                            this.implementation = implementation;
+                            break;
+                        }
+                    }
+
+                    this.implementations = null;
+                }
+            }
+        }
+
+        if (this.implementation != null) {
+            return this.implementation.get();
+        } else {
+            throw new IllegalStateException("No implementations found!");
+        }
     }
 
     /**
      * @return whether or not the currently used implementation is based on native code
      */
-    public boolean isNative()   {
-        return this.implementation instanceof NativeImpl;
+    public boolean isNative() {
+        return this.get() instanceof NativeImpl;
     }
 
     /**
@@ -138,23 +183,10 @@ public final class NativeCode<T> implements Supplier<T> {
 
     /**
      * Extension of {@link Impl} for use by implementations that actually use native code.
-     * <p>
-     * Eliminates the boilerplate of checking if the current system is supported.
      *
      * @param <T> the type of the feature to be implemented
      * @author DaPorkchop_
      */
     public static abstract class NativeImpl<T> extends Impl<T> {
-        /**
-         * Whether or not native libraries are available.
-         */
-        public static final boolean AVAILABLE =
-                ((PlatformInfo.ARCHITECTURE == Architecture.x86 || PlatformInfo.ARCHITECTURE == Architecture.x86_64) && PlatformInfo.OPERATING_SYSTEM == OperatingSystem.Linux)
-                || (PlatformInfo.ARCHITECTURE == Architecture.x86_64 && PlatformInfo.OPERATING_SYSTEM == OperatingSystem.Windows);
-
-        @Override
-        protected boolean _available() {
-            return AVAILABLE;
-        }
     }
 }

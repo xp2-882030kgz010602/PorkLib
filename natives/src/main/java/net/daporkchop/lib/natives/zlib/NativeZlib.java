@@ -23,10 +23,10 @@ import net.daporkchop.lib.natives.NativeCode;
  * @author DaPorkchop_
  */
 public final class NativeZlib extends NativeCode.NativeImpl<Zlib> implements Zlib {
-    static {
-        if (NativeCode.NativeImpl.AVAILABLE)    {
-            NativeCode.loadNativeLibrary("zlib");
+    public static final boolean AVAILABLE = NativeCode.loadNativeLibrary("zlib");
 
+    static {
+        if (AVAILABLE)    {
             NativeDeflater.load();
             NativeInflater.load();
         }
@@ -35,6 +35,11 @@ public final class NativeZlib extends NativeCode.NativeImpl<Zlib> implements Zli
     @Override
     protected Zlib _get() {
         return this;
+    }
+
+    @Override
+    protected boolean _available() {
+        return AVAILABLE;
     }
 
     @Override
