@@ -13,22 +13,12 @@
  *
  */
 
-package net.daporkchop.lib.natives;
-
-import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.natives.cipher.CipherProvider;
-import net.daporkchop.lib.natives.zlib.JavaZlib;
-import net.daporkchop.lib.natives.zlib.NativeZlib;
-import net.daporkchop.lib.natives.zlib.Zlib;
+package net.daporkchop.lib.natives.cipher;
 
 /**
- * Utility class, has static references to {@link NativeCode} instances for all implemented features.
+ * Provides methods for creating cipher instances.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class PNatives {
-    public static final NativeCode<Zlib> ZLIB = new NativeCode<>(NativeZlib::new, JavaZlib::new);
-
-    public static final NativeCode<CipherProvider> CIPHER = new NativeCode<>();
+public interface CipherProvider {
 }

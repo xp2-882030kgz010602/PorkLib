@@ -13,22 +13,39 @@
  *
  */
 
-package net.daporkchop.lib.natives;
+package net.daporkchop.lib.natives.cipher;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.natives.cipher.CipherProvider;
-import net.daporkchop.lib.natives.zlib.JavaZlib;
-import net.daporkchop.lib.natives.zlib.NativeZlib;
-import net.daporkchop.lib.natives.zlib.Zlib;
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
- * Utility class, has static references to {@link NativeCode} instances for all implemented features.
+ * Base representation of a cipher.
+ * <p>
+ * Implementations are not expected to be thread-safe, and may produce unexpected behavior if used from multiple threads.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class PNatives {
-    public static final NativeCode<Zlib> ZLIB = new NativeCode<>(NativeZlib::new, JavaZlib::new);
+public interface PCipher extends Releasable {
+    /**
+     * Gets this cipher's textual name.
+     * <p>
+     * Example: {@code AES/CTR/NoPadding}
+     *
+     * @return this cipher's textual name
+     */
+    String name();
 
-    public static final NativeCode<CipherProvider> CIPHER = new NativeCode<>();
+    /**
+     * Processes the given bytes.
+     *
+     * @param src the {@link ByteBuf} from which to read data
+     * @param dst the {@link ByteBuf} to which to write data
+     */
+    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
+
+    /**
+     * Resets this cipher to its original state, allowing it to be re-used with different initialization parameters.
+     */
+    void reset();
 }

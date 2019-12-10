@@ -21,6 +21,8 @@ import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
  * Used for inflating a Zlib-compressed data stream.
+ * <p>
+ * Implementations are not expected to be thread-safe, and may produce unexpected behavior if used from multiple threads.
  *
  * @author DaPorkchop_
  */
@@ -40,7 +42,7 @@ public interface PInflater extends Releasable {
      * @param output a {@link ByteBuf} that the output data will be written to
      */
     default void inflate(@NonNull ByteBuf input, @NonNull ByteBuf output) {
-        if (!input.isReadable())    {
+        if (!input.isReadable()) {
             throw new IllegalStateException("Input not readable!");
         }
         this.input(input.memoryAddress() + input.readerIndex(), input.readableBytes()); //we don't need to set this in a loop
