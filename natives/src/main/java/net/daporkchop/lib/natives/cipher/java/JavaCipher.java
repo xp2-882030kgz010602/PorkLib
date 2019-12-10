@@ -13,22 +13,51 @@
  *
  */
 
-package net.daporkchop.lib.natives.cipher;
+package net.daporkchop.lib.natives.cipher.java;
 
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+import net.daporkchop.lib.natives.cipher.PCipher;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import javax.crypto.Cipher;
 
 /**
- * Provides methods for creating cipher instances.
- *
  * @author DaPorkchop_
  */
-public interface CipherProvider {
-    /**
-     * Creates a new {@link PCipher} based on the given name.
-     *
-     * @param name the name of the cipher
-     * @return a new {@link PCipher} based on the given name
-     * @throws IllegalArgumentException if the provider can not create a cipher with the matching name
-     */
-    PCipher create(@NonNull String name) throws IllegalArgumentException;
+@RequiredArgsConstructor
+@Accessors(fluent = true)
+public class JavaCipher implements PCipher {
+    @NonNull
+    protected final Cipher cipher;
+    @Getter
+    @NonNull
+    protected final String name;
+
+    @Override
+    public int keySize() {
+        return 0;
+    }
+
+    @Override
+    public void init(boolean encrypt, @NonNull ByteBuf key) {
+
+    }
+
+    @Override
+    public void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
+
+    }
+
+    @Override
+    public void reset() {
+
+    }
+
+    @Override
+    public void release() throws AlreadyReleasedException {
+    }
 }

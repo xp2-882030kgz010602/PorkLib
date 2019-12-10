@@ -32,6 +32,8 @@ public class NativeTests {
     private static final int SIZE = 67108864; //64 MiB
 
     public static void main(String... args) throws IOException {
+        PNatives.CIPHER.get().create("AES/CTR/NoPadding").name();
+
         if (!PNatives.ZLIB.isNative())  {
             throw new IllegalStateException("Not using native zlib!");
         }

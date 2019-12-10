@@ -37,6 +37,19 @@ public interface PCipher extends Releasable {
     String name();
 
     /**
+     * @return the key size used by this cipher, in bytes
+     */
+    int keySize();
+
+    /**
+     * Initializes this cipher.
+     *
+     * @param encrypt if {@code true}, the cipher will be in encryption mode, decryption mode otherwise
+     * @param key     a {@link ByteBuf} containing the key to use. Must be exactly {@link #keySize()} bytes
+     */
+    void init(boolean encrypt, @NonNull ByteBuf key);
+
+    /**
      * Processes the given bytes.
      *
      * @param src the {@link ByteBuf} from which to read data

@@ -15,20 +15,21 @@
 
 package net.daporkchop.lib.natives.cipher;
 
-import lombok.NonNull;
-
 /**
- * Provides methods for creating cipher instances.
+ * A variant of {@link PCipher} which allows random access while decrypting.
  *
  * @author DaPorkchop_
  */
-public interface CipherProvider {
+public interface PSeekableCipher extends PCipher {
     /**
-     * Creates a new {@link PCipher} based on the given name.
+     * Seeks to the given index.
      *
-     * @param name the name of the cipher
-     * @return a new {@link PCipher} based on the given name
-     * @throws IllegalArgumentException if the provider can not create a cipher with the matching name
+     * @param index the new byte index to seek to
      */
-    PCipher create(@NonNull String name) throws IllegalArgumentException;
+    void seek(long index);
+
+    /**
+     * @return the cipher's current index
+     */
+    long index();
 }

@@ -17,6 +17,7 @@ package net.daporkchop.lib.natives;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.natives.cipher.CipherProvider;
+import net.daporkchop.lib.natives.cipher.java.JavaCipherProvider;
 import net.daporkchop.lib.natives.zlib.JavaZlib;
 import net.daporkchop.lib.natives.zlib.NativeZlib;
 import net.daporkchop.lib.natives.zlib.Zlib;
@@ -30,5 +31,5 @@ import net.daporkchop.lib.natives.zlib.Zlib;
 public class PNatives {
     public static final NativeCode<Zlib> ZLIB = new NativeCode<>(NativeZlib::new, JavaZlib::new);
 
-    public static final NativeCode<CipherProvider> CIPHER = new NativeCode<>();
+    public static final NativeCode<CipherProvider> CIPHER = new NativeCode<>(JavaCipherProvider::new);
 }

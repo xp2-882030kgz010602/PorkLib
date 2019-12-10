@@ -13,22 +13,43 @@
  *
  */
 
-package net.daporkchop.lib.natives.cipher;
+package net.daporkchop.lib.natives.cipher.java;
 
 import lombok.NonNull;
+import net.daporkchop.lib.natives.NativeCode;
+import net.daporkchop.lib.natives.cipher.CipherProvider;
+import net.daporkchop.lib.natives.cipher.PCipher;
+
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 /**
- * Provides methods for creating cipher instances.
+ * Implementation of {@link CipherProvider} using Java's built-in crypto APIs.
  *
  * @author DaPorkchop_
  */
-public interface CipherProvider {
-    /**
-     * Creates a new {@link PCipher} based on the given name.
-     *
-     * @param name the name of the cipher
-     * @return a new {@link PCipher} based on the given name
-     * @throws IllegalArgumentException if the provider can not create a cipher with the matching name
-     */
-    PCipher create(@NonNull String name) throws IllegalArgumentException;
+public final class JavaCipherProvider extends NativeCode.Impl<CipherProvider> implements CipherProvider {
+    @Override
+    protected CipherProvider _get() {
+        return this;
+    }
+
+    @Override
+    protected boolean _available() {
+        return true;
+    }
+
+    @Override
+    public PCipher create(@NonNull String name) throws IllegalArgumentException {
+        try {
+            Cipher cipher = Cipher.getInstance(name);
+
+            return new JavaCipher(cipher, name);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e)   {
+            throw new IllegalArgumentException(name, e);
+        }
+    }
 }

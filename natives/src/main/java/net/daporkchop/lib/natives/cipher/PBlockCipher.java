@@ -15,20 +15,27 @@
 
 package net.daporkchop.lib.natives.cipher;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 
 /**
- * Provides methods for creating cipher instances.
+ * A variant of {@link PCipher} which symmetrically encrypts data in fixed-size blocks.
  *
  * @author DaPorkchop_
  */
-public interface CipherProvider {
+public interface PBlockCipher extends PCipher {
     /**
-     * Creates a new {@link PCipher} based on the given name.
-     *
-     * @param name the name of the cipher
-     * @return a new {@link PCipher} based on the given name
-     * @throws IllegalArgumentException if the provider can not create a cipher with the matching name
+     * @return this cipher's block size (in bytes)
      */
-    PCipher create(@NonNull String name) throws IllegalArgumentException;
+    int blockSize();
+
+    /**
+     * Processes the given bytes.
+     * <p>
+     * Both source and destination buffers must be identically sized, and be multiples of {@link #blockSize()}.
+     *
+     * @see PCipher#process(ByteBuf, ByteBuf)
+     */
+    @Override
+    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
 }
