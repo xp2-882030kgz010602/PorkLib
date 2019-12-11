@@ -16,44 +16,99 @@
 package net.daporkchop.lib.natives.cipher.java;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import net.daporkchop.lib.natives.cipher.PCipher;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.natives.cipher.PBlockCipher;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Accessors(fluent = true)
-public class JavaBlockCipher implements PCipher {
-    @NonNull
-    protected final Cipher cipher;
-    @Getter
-    @NonNull
-    protected final String name;
+public class JavaBlockCipher extends JavaCipher implements PBlockCipher {
+    protected static final long SECRETKEYSPEC_KEY_OFFSET = PUnsafe.pork_getOffset(SecretKeySpec.class, "key");
+    protected static final long SECRETKEYSPEC_ALGORITHM_OFFSET = PUnsafe.pork_getOffset(SecretKeySpec.class, "algorithm");
+    protected static final long IVPARAMETERSPEC_IV_OFFSET = PUnsafe.pork_getOffset(IvParameterSpec.class, "iv");
+
+    protected static final Map<String, Integer> KEY_SIZES = Collections.synchronizedMap(new HashMap<>());
+
+    protected final SecretKeySpec key;
+    protected final IvParameterSpec iv;
+
+    public JavaBlockCipher(@NonNull Cipher cipher, @NonNull String name) {
+        super(cipher, name);
+
+        this.key = PUnsafe.allocateInstance(SecretKeySpec.class);
+        PUnsafe.putObject(this.key, SECRETKEYSPEC_KEY_OFFSET, new byte[this.keySize()]);
+        PUnsafe.putObject(this.key, SECRETKEYSPEC_ALGORITHM_OFFSET, name);
+
+        this.iv = PUnsafe.allocateInstance(IvParameterSpec.class);
+        PUnsafe.putObject(this.iv, IVPARAMETERSPEC_IV_OFFSET, new byte[this.ivSize()]);
+    }
 
     @Override
     public int keySize() {
-        this.cipher.
-        return this.cipher.getBlockSize();
+        //TODO: this is dumb
+        return KEY_SIZES.computeIfAbsent(this.name, name -> {
+            try {
+                return KeyGenerator.getInstance(name).generateKey().getEncoded().length;
+            } catch (NoSuchAlgorithmException e)    {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
     public int ivSize() {
-        return 0;
+        return this.keySize();
+    }
+
+    @Override
+    public int blockSize() {
+        return this.cipher.getBlockSize();
     }
 
     @Override
     public void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv) {
+        if (iv == null) {
+            throw new IllegalArgumentException("IV is required!");
+        }
+
+        byte[] keyArray = PUnsafe.getObject(this.key, SECRETKEYSPEC_KEY_OFFSET);
+        if (key.readableBytes() != keyArray.length) {
+            throw new IllegalArgumentException(String.format("Key must be %d bytes! Given: %d", keyArray.length, key.readableBytes()));
+        }
+        byte[] ivArray = PUnsafe.getObject(this.iv, IVPARAMETERSPEC_IV_OFFSET);
+        if (iv.readableBytes() != ivArray.length) {
+            throw new IllegalArgumentException(String.format("IV must be %d bytes! Given: %d", ivArray.length, iv.readableBytes()));
+        }
+
+        key.readBytes(keyArray);
+        iv.readBytes(ivArray);
+        try {
+            this.cipher.init(encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE, this.key, this.iv);
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException e)    {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public void release() throws AlreadyReleasedException {
-        //no-op
+    public int process(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
+        return 0;
+    }
+
+    @Override
+    public void finish(@NonNull ByteBuf dst) {
     }
 }

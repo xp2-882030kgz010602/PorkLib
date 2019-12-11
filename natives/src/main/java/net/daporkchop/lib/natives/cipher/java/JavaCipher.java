@@ -16,12 +16,15 @@
 package net.daporkchop.lib.natives.cipher.java;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.natives.cipher.PCipher;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import javax.crypto.Cipher;
+import javax.crypto.CipherSpi;
 
 /**
  * Abstract representation of a {@link PCipher} backed by a Java
@@ -30,34 +33,26 @@ import javax.crypto.Cipher;
  */
 @Accessors(fluent = true)
 public abstract class JavaCipher implements PCipher {
-    protected final Cipher cipher;
+    protected static final long CIPHER_ENGINE_OFFSET = PUnsafe.pork_getOffset(Cipher.class, "spi");
 
-    @NonNull
+    protected final Cipher cipher;
+    protected final CipherSpi engine;
+
+    @Getter
     protected final String name;
 
     public JavaCipher(@NonNull Cipher cipher, @NonNull String name) {
         this.cipher = cipher;
         this.name = name;
-    }
 
-    @Override
-    public String name() {
-        return null;
-    }
-
-    @Override
-    public int keySize() {
-        return 0;
-    }
-
-    @Override
-    public int ivSize() {
-        return 0;
-    }
-
-    @Override
-    public void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv) {
-
+        CipherSpi engine = PUnsafe.getObject(cipher, CIPHER_ENGINE_OFFSET);
+        if (engine == null)    {
+            cipher.getBlockSize();
+            if ((engine = PUnsafe.getObject(cipher, CIPHER_ENGINE_OFFSET)) == null) {
+                throw new IllegalStateException("Cipher does not have engine!");
+            }
+        }
+        this.engine = engine;
     }
 
     @Override
@@ -72,6 +67,6 @@ public abstract class JavaCipher implements PCipher {
 
     @Override
     public void release() throws AlreadyReleasedException {
-
+        //no-op
     }
 }
