@@ -13,43 +13,47 @@
  *
  */
 
-package net.daporkchop.lib.natives.cipher;
+package net.daporkchop.lib.natives.cipher.java;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+import net.daporkchop.lib.natives.cipher.PCipher;
+import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import javax.crypto.Cipher;
 
 /**
- * A variant of {@link PCipher} which symmetrically encrypts data in fixed-size blocks.
- *
  * @author DaPorkchop_
  */
-public interface PBlockCipher extends PCipher {
-    /**
-     * @return this cipher's block size (in bytes)
-     */
-    int blockSize();
+@RequiredArgsConstructor
+@Accessors(fluent = true)
+public class JavaBlockCipher implements PCipher {
+    @NonNull
+    protected final Cipher cipher;
+    @Getter
+    @NonNull
+    protected final String name;
 
-    /**
-     * Processes the given bytes.
-     * <p>
-     * This will write data to the destination buffer in increments of {@link #blockSize()}. It will continue reading
-     * from the source buffer as long as there is still space in the destination buffer, but may buffer up to {@link #blockSize()}
-     * bytes internally.
-     *
-     * @param src the {@link ByteBuf} from which to read data
-     * @param dst the {@link ByteBuf} to which to write data
-     * @return the number of bytes processed
-     */
-    int process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
+    @Override
+    public int keySize() {
+        this.cipher.
+        return this.cipher.getBlockSize();
+    }
 
-    /**
-     * Finishes this cipher, flushing any internal buffers and applying padding if needed.
-     * <p>
-     * The cipher will have to be newly initialized before being used again.
-     * <p>
-     * This method may not write any data to the destination buffer.
-     *
-     * @param dst the {@link ByteBuf} to which to write data
-     */
-    void finish(@NonNull ByteBuf dst);
+    @Override
+    public int ivSize() {
+        return 0;
+    }
+
+    @Override
+    public void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv) {
+    }
+
+    @Override
+    public void release() throws AlreadyReleasedException {
+        //no-op
+    }
 }

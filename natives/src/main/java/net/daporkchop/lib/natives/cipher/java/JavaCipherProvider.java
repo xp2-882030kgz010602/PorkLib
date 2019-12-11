@@ -22,8 +22,6 @@ import net.daporkchop.lib.natives.cipher.PCipher;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 /**
@@ -47,7 +45,7 @@ public final class JavaCipherProvider extends NativeCode.Impl<CipherProvider> im
         try {
             Cipher cipher = Cipher.getInstance(name);
 
-            return new JavaCipher(cipher, name);
+            return new JavaBlockCipher(cipher, name);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e)   {
             throw new IllegalArgumentException(name, e);
         }

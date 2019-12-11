@@ -42,23 +42,41 @@ public interface PCipher extends Releasable {
     int keySize();
 
     /**
+     * @return the IV (input vector) size used by this cipher, in bytes, or {@code -1} if none is required
+     */
+    int ivSize();
+
+    /**
+     * @see #init(boolean, ByteBuf, ByteBuf)
+     */
+    default void init(boolean encrypt, @NonNull ByteBuf key) {
+        if (this.ivSize() == -1) {
+            this.init(encrypt, key, null);
+        } else {
+            throw new IllegalArgumentException(this.name() + " requires an IV!");
+        }
+    }
+
+    /**
      * Initializes this cipher.
      *
      * @param encrypt if {@code true}, the cipher will be in encryption mode, decryption mode otherwise
      * @param key     a {@link ByteBuf} containing the key to use. Must be exactly {@link #keySize()} bytes
+     * @param iv      a {@link ByteBuf} containing the IV to use. Must be exactly {@link #ivSize()} bytes, or {@code null}
+     *                if {@link #ivSize()} is {@code -1}
      */
-    void init(boolean encrypt, @NonNull ByteBuf key);
+    void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv);
 
     /**
-     * Processes the given bytes.
+     * Calculates the data size produced by this cipher if provided with the given number of input bytes.
+     * <p>
+     * Note that the values returned by this method are a maximum, in practice the processed size may be smaller than
+     * reported by this method.
+     * <p>
+     * The cipher must be initialized before using this method.
      *
-     * @param src the {@link ByteBuf} from which to read data
-     * @param dst the {@link ByteBuf} to which to write data
+     * @param inputSize the size of the input data, in bytes
+     * @return the maximum size of the output data, in bytes
      */
-    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
-
-    /**
-     * Resets this cipher to its original state, allowing it to be re-used with different initialization parameters.
-     */
-    void reset();
+    long processedSize(long inputSize);
 }

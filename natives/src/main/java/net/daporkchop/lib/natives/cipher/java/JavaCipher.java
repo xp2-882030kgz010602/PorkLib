@@ -16,9 +16,7 @@
 package net.daporkchop.lib.natives.cipher.java;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.natives.cipher.PCipher;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -26,16 +24,26 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import javax.crypto.Cipher;
 
 /**
+ * Abstract representation of a {@link PCipher} backed by a Java
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Accessors(fluent = true)
-public class JavaCipher implements PCipher {
-    @NonNull
+public abstract class JavaCipher implements PCipher {
     protected final Cipher cipher;
-    @Getter
+
     @NonNull
     protected final String name;
+
+    public JavaCipher(@NonNull Cipher cipher, @NonNull String name) {
+        this.cipher = cipher;
+        this.name = name;
+    }
+
+    @Override
+    public String name() {
+        return null;
+    }
 
     @Override
     public int keySize() {
@@ -43,21 +51,27 @@ public class JavaCipher implements PCipher {
     }
 
     @Override
-    public void init(boolean encrypt, @NonNull ByteBuf key) {
+    public int ivSize() {
+        return 0;
+    }
+
+    @Override
+    public void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv) {
 
     }
 
     @Override
-    public void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
-
-    }
-
-    @Override
-    public void reset() {
-
+    public long processedSize(long inputSize) {
+        if (inputSize < 0L) {
+            throw new IllegalArgumentException("inputSize may not be negative!");
+        } else if (inputSize > Integer.MAX_VALUE)   {
+            throw new IllegalArgumentException("Java cipher does not support computing processed size for more than Integer.MAX_VALUE!");
+        }
+        return this.cipher.getOutputSize((int) inputSize);
     }
 
     @Override
     public void release() throws AlreadyReleasedException {
+
     }
 }

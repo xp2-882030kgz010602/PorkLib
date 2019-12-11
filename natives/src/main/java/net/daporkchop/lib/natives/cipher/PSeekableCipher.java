@@ -20,6 +20,7 @@ package net.daporkchop.lib.natives.cipher;
  *
  * @author DaPorkchop_
  */
+//TODO: this
 public interface PSeekableCipher extends PCipher {
     /**
      * Seeks to the given index.
