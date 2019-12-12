@@ -13,22 +13,16 @@
  *
  */
 
-package net.daporkchop.lib.natives.cipher;
-
-import lombok.NonNull;
+package net.daporkchop.lib.crypto.key;
 
 /**
- * Provides methods for creating cipher instances.
+ * Generates keys.
  *
  * @author DaPorkchop_
  */
-public interface CipherProvider {
+public interface PKeyGenerator {
     /**
-     * Creates a new {@link PCipher} based on the given name.
-     *
-     * @param name the name of the cipher
-     * @return a new {@link PCipher} based on the given name
-     * @throws IllegalArgumentException if the provider can not create a cipher with the matching name
+     * @return a newly generated {@link PKey}
      */
-    PCipher create(@NonNull String name) throws IllegalArgumentException;
+    PKey generate();
 }

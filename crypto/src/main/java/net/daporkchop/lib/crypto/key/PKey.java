@@ -13,43 +13,35 @@
  *
  */
 
-package net.daporkchop.lib.natives.cipher;
+package net.daporkchop.lib.crypto.key;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 
 /**
- * A variant of {@link PCipher} which symmetrically encrypts data in fixed-size blocks.
+ * A cryptographic key.
  *
  * @author DaPorkchop_
  */
-public interface PBlockCipher extends PCipher {
+public interface PKey {
     /**
-     * @return this cipher's block size (in bytes)
+     * @return the encoded size of this {@link PKey}, in bytes
      */
-    int blockSize();
+    int encodedSize();
 
     /**
-     * Processes the given bytes.
-     * <p>
-     * This will write data to the destination buffer in increments of {@link #blockSize()}. It will continue reading
-     * from the source buffer as long as there is still space in the destination buffer, but may buffer up to {@link #blockSize()}
-     * bytes internally.
+     * Decodes this {@link PKey} from the encoded data in the given {@link ByteBuf}.
      *
-     * @param src the {@link ByteBuf} from which to read data
-     * @param dst the {@link ByteBuf} to which to write data
-     * @return the number of bytes processed
+     * @param src the {@link ByteBuf} to read data from. Must have at least {@link #encodedSize()} bytes readable!
      */
-    int process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
+    void decode(@NonNull ByteBuf src);
 
     /**
-     * Finishes this cipher, flushing any internal buffers and applying padding if needed.
+     * Encodes this {@link PKey} and returns the encoded key as a {@link ByteBuf}.
      * <p>
-     * The cipher will have to be newly initialized before being used again.
-     * <p>
-     * This method may not write any data to the destination buffer.
+     * The returned {@link ByteBuf} must be released manually!
      *
-     * @param dst the {@link ByteBuf} to which to write data
+     * @return the encoded representation of this {@link PKey}
      */
-    void finish(@NonNull ByteBuf dst);
+    ByteBuf encoded();
 }
