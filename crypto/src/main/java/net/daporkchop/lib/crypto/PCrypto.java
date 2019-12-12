@@ -13,19 +13,33 @@
  *
  */
 
-package net.daporkchop.lib.natives;
+package net.daporkchop.lib.crypto;
 
-import lombok.experimental.UtilityClass;
-import net.daporkchop.lib.natives.zlib.JavaZlib;
-import net.daporkchop.lib.natives.zlib.NativeZlib;
-import net.daporkchop.lib.natives.zlib.Zlib;
+import net.daporkchop.lib.crypto.cipher.PCipher;
+import net.daporkchop.lib.crypto.key.PKeyGenerator;
 
 /**
- * Utility class, has static references to {@link NativeCode} instances for all implemented features.
+ * Representation of a cryptographic algorithm.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class PNatives {
-    public static final NativeCode<Zlib> ZLIB = new NativeCode<>(NativeZlib::new, JavaZlib::new);
+public interface PCrypto {
+    /**
+     * Gets this algorithm's textual name.
+     * <p>
+     * Example: {@code AES/CTR/NoPadding}
+     *
+     * @return this algorithm's textual name
+     */
+    String name();
+
+    /**
+     * @return a new {@link PCipher} capable of encrypting/decrypting data with this algorithm
+     */
+    PCipher cipher();
+
+    /**
+     * @return a {@link PKeyGenerator} which can generate {@link net.daporkchop.lib.crypto.key.PKey}s suitable for use with this algorithm
+     */
+    PKeyGenerator keyGen();
 }

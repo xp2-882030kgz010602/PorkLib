@@ -15,6 +15,11 @@
 
 package net.daporkchop.lib.crypto.key;
 
+import lombok.NonNull;
+
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Generates keys.
  *
@@ -22,7 +27,35 @@ package net.daporkchop.lib.crypto.key;
  */
 public interface PKeyGenerator {
     /**
+     * @return the currently configured key size
+     */
+    int size();
+
+    /**
+     * Sets the size of the keys created by this generator.
+     *
+     * @param size the new key size
+     * @return this {@link PKeyGenerator} instance
+     */
+    PKeyGenerator size(int size);
+
+    /**
+     * @return all key sizes allowed by this generator
+     */
+    int[] allowedSizes();
+
+    /**
+     * @see #generate(Random)
+     */
+    default PKey generate() {
+        return this.generate(ThreadLocalRandom.current());
+    }
+
+    /**
+     * Generates a new key using the given {@link Random} instance as a source.
+     *
+     * @param random the {@link Random} instance to use for generating the key
      * @return a newly generated {@link PKey}
      */
-    PKey generate();
+    PKey generate(@NonNull Random random);
 }

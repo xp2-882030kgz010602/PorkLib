@@ -15,8 +15,7 @@
 
 package net.daporkchop.lib.crypto.cipher;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+import net.daporkchop.lib.crypto.PCrypto;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
@@ -28,44 +27,9 @@ import net.daporkchop.lib.unsafe.capability.Releasable;
  */
 public interface PCipher extends Releasable {
     /**
-     * Gets this cipher's textual name.
-     * <p>
-     * Example: {@code AES/CTR/NoPadding}
-     *
-     * @return this cipher's textual name
+     * @return the algorithm that this cipher is implementing
      */
-    String name();
-
-    /**
-     * @return the key size used by this cipher, in bytes
-     */
-    int keySize();
-
-    /**
-     * @return the IV (input vector) size used by this cipher, in bytes, or {@code -1} if none is required
-     */
-    int ivSize();
-
-    /**
-     * @see #init(boolean, ByteBuf, ByteBuf)
-     */
-    default void init(boolean encrypt, @NonNull ByteBuf key) {
-        if (this.ivSize() == -1) {
-            this.init(encrypt, key, null);
-        } else {
-            throw new IllegalArgumentException(this.name() + " requires an IV!");
-        }
-    }
-
-    /**
-     * Initializes this cipher.
-     *
-     * @param encrypt if {@code true}, the cipher will be in encryption mode, decryption mode otherwise
-     * @param key     a {@link ByteBuf} containing the key to use. Must be exactly {@link #keySize()} bytes
-     * @param iv      a {@link ByteBuf} containing the IV to use. Must be exactly {@link #ivSize()} bytes, or {@code null}
-     *                if {@link #ivSize()} is {@code -1}
-     */
-    void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv);
+    PCrypto alg();
 
     /**
      * Calculates the data size produced by this cipher if provided with the given number of input bytes.
