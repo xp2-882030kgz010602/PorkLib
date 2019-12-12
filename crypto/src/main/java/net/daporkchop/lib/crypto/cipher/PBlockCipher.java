@@ -17,6 +17,7 @@ package net.daporkchop.lib.crypto.cipher;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.lib.crypto.key.PKey;
 
 /**
  * A variant of {@link PCipher} which symmetrically encrypts data in fixed-size blocks.
@@ -30,28 +31,59 @@ public interface PBlockCipher extends PCipher {
     int blockSize();
 
     /**
+     * Initializes this cipher.
+     *
+     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
+     * @param key     the key to use
+     */
+    @Override
+    default void init(boolean encrypt, @NonNull PKey key) {
+        ByteBuf keyBuf = key.encoded();
+        this.init(encrypt, keyBuf, null);
+        keyBuf.release();
+    }
+
+    /**
+     * Initializes this cipher.
+     *
+     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
+     * @param key     the key to use
+     */
+    default void init(boolean encrypt, @NonNull ByteBuf key)    {
+        this.init(encrypt, key, null);
+    }
+
+    /**
+     * Initializes this cipher.
+     *
+     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
+     * @param key     the key to use
+     * @param iv      the IV to use. If {@code null}, the IV will be 0.
+     */
+    void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv);
+
+    /**
      * Processes a single block.
      *
      * @param src the {@link ByteBuf} from which to read data. Must have at least {@link #blockSize()} bytes readable!
-     * @param dst the {@link ByteBuf} to which to write data. Must have at least {@link #blockSize()} bytes writable!
+     * @param dst the {@link ByteBuf} to which to write data
      */
     void processBlock(@NonNull ByteBuf src, @NonNull ByteBuf dst);
 
     /**
      * Processes multiple blocks.
      * <p>
-     * Both source and destination buffers must be identically sized, and be a multiple of {@link #blockSize()} bytes.
+     * Source buffer must be a multiple of {@link #blockSize()} bytes.
      *
      * @param src the {@link ByteBuf} from which to read data
      * @param dst the {@link ByteBuf} to which to write data
      */
     default void processBlocks(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
         int blockSize = this.blockSize();
-        if (src.readableBytes() != dst.writableBytes()) {
-            throw new IllegalArgumentException("src and dst buffers must be identically sized!");
-        } else if (src.readableBytes() % blockSize != 0 || dst.writableBytes() % blockSize != 0) {
-            throw new IllegalArgumentException(String.format("src and dst buffers must be multiples of block size! (src=%d,dst=%d,block size=%d)", src.readableBytes(), dst.writableBytes(), blockSize));
+        if (src.readableBytes() % blockSize != 0) {
+            throw new IllegalArgumentException(String.format("src buffers must be a multiple of block size! (src=%d,block size=%d)", src.readableBytes(), blockSize));
         }
+        dst.ensureWritable(src.readableBytes());
         for (int i = src.readableBytes() / blockSize - 1; i >= 0; i--) {
             this.processBlock(src, dst);
         }

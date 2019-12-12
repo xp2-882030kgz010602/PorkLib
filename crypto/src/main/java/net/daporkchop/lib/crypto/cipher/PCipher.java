@@ -15,7 +15,9 @@
 
 package net.daporkchop.lib.crypto.cipher;
 
+import lombok.NonNull;
 import net.daporkchop.lib.crypto.PCrypto;
+import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
@@ -30,6 +32,14 @@ public interface PCipher extends Releasable {
      * @return the algorithm that this cipher is implementing
      */
     PCrypto alg();
+
+    /**
+     * Initializes this cipher.
+     *
+     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
+     * @param key     the key to use
+     */
+    void init(boolean encrypt, @NonNull PKey key);
 
     /**
      * Calculates the data size produced by this cipher if provided with the given number of input bytes.
