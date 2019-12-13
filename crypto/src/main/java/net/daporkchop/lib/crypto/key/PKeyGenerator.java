@@ -16,6 +16,7 @@
 package net.daporkchop.lib.crypto.key;
 
 import lombok.NonNull;
+import net.daporkchop.lib.crypto.alg.PCryptAlg;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -26,6 +27,11 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author DaPorkchop_
  */
 public interface PKeyGenerator {
+    /**
+     * @return the {@link PCryptAlg} which this generator generates key for
+     */
+    PCryptAlg alg();
+
     /**
      * @return the currently configured key size
      */
@@ -38,11 +44,6 @@ public interface PKeyGenerator {
      * @return this {@link PKeyGenerator} instance
      */
     PKeyGenerator size(int size);
-
-    /**
-     * @return all key sizes allowed by this generator
-     */
-    int[] allowedSizes();
 
     /**
      * @see #generate(Random)

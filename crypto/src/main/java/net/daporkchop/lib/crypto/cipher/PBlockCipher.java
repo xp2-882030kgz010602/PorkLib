@@ -17,6 +17,8 @@ package net.daporkchop.lib.crypto.cipher;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
+import net.daporkchop.lib.crypto.alg.PCryptAlg;
 import net.daporkchop.lib.crypto.key.PKey;
 
 /**
@@ -25,10 +27,15 @@ import net.daporkchop.lib.crypto.key.PKey;
  * @author DaPorkchop_
  */
 public interface PBlockCipher extends PCipher {
+    @Override
+    PBlockCipherAlg alg();
+
     /**
      * @return this cipher's block size (in bytes)
      */
-    int blockSize();
+    default int blockSize() {
+        return this.alg().blockSize();
+    }
 
     /**
      * Initializes this cipher.

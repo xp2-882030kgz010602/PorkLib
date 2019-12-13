@@ -16,4 +16,6 @@
 dependencies {
     compile project(":binary")
     compile project(":natives")
+
+    compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
 }

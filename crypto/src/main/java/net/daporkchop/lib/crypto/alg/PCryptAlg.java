@@ -13,21 +13,27 @@
  *
  */
 
-package net.daporkchop.lib.crypto;
+package net.daporkchop.lib.crypto.alg;
 
 import net.daporkchop.lib.crypto.cipher.PCipher;
 import net.daporkchop.lib.crypto.key.PKeyGenerator;
 
 /**
  * Representation of a cryptographic algorithm.
+ * <p>
+ * This may be a full cipher configuration, or only a component (e.g. a block cipher padding mode).
  *
  * @author DaPorkchop_
+ * @see PBlockCipherAlg
  */
-public interface PCrypto {
+public interface PCryptAlg {
     /**
      * Gets this algorithm's textual name.
      * <p>
-     * Example: {@code AES/CTR/NoPadding}
+     * Examples:
+     * - {@code AES/CTR/NoPadding}
+     * - {@code AES}
+     * - {@code NoPadding}
      *
      * @return this algorithm's textual name
      */
@@ -42,4 +48,9 @@ public interface PCrypto {
      * @return a {@link PKeyGenerator} which can generate {@link net.daporkchop.lib.crypto.key.PKey}s suitable for use with this algorithm
      */
     PKeyGenerator keyGen();
+
+    /**
+     * @return all key sizes allowed by this generator (in bytes)
+     */
+    int[] keySizes();
 }

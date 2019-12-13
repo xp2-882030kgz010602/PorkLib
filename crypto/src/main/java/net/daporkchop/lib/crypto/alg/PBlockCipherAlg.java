@@ -13,44 +13,21 @@
  *
  */
 
-package net.daporkchop.lib.crypto.cipher;
+package net.daporkchop.lib.crypto.alg;
 
-import lombok.NonNull;
-import net.daporkchop.lib.crypto.alg.PCryptAlg;
-import net.daporkchop.lib.crypto.key.PKey;
-import net.daporkchop.lib.unsafe.capability.Releasable;
+import net.daporkchop.lib.crypto.cipher.PBlockCipher;
 
 /**
- * Base representation of a cipher.
- * <p>
- * Implementations are not expected to be thread-safe, and may produce unexpected behavior if used from multiple threads.
+ * A {@link PCryptAlg} which is specialized for block ciphers.
  *
  * @author DaPorkchop_
  */
-public interface PCipher extends Releasable {
-    /**
-     * @return the algorithm that this cipher is implementing
-     */
-    PCryptAlg alg();
+public interface PBlockCipherAlg extends PCryptAlg {
+    @Override
+    PBlockCipher cipher();
 
     /**
-     * Initializes this cipher.
-     *
-     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
-     * @param key     the key to use
+     * @return this algorithm's block size (in bytes)
      */
-    void init(boolean encrypt, @NonNull PKey key);
-
-    /**
-     * Calculates the data size produced by this cipher if provided with the given number of input bytes.
-     * <p>
-     * Note that the values returned by this method are a maximum, in practice the processed size may be smaller than
-     * reported by this method.
-     * <p>
-     * The cipher must be initialized before using this method.
-     *
-     * @param inputSize the size of the input data, in bytes
-     * @return the maximum size of the output data, in bytes
-     */
-    long processedSize(long inputSize);
+    int blockSize();
 }
