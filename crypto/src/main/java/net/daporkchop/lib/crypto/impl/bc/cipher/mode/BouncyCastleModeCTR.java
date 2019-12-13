@@ -13,74 +13,43 @@
  *
  */
 
-package net.daporkchop.lib.crypto.impl.bc.cipher;
+package net.daporkchop.lib.crypto.impl.bc.cipher.mode;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
-import net.daporkchop.lib.crypto.impl.bc.algo.BouncyCastleAES;
+import net.daporkchop.lib.crypto.impl.bc.cipher.block.BouncyCastleBlockCipher;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
-import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.BlockCipher;
+import org.bouncycastle.crypto.modes.SICBlockCipher;
 
 /**
  * @author DaPorkchop_
  */
-public final class BouncyCastleCipherAES implements PBlockCipher {
-    protected final AESEngine engine = new AESEngine();
-    protected final byte[] buffer = new byte[(128 >>> 3) << 1];
+@Accessors(fluent = true)
+public final class BouncyCastleModeCTR extends SICBlockCipher implements PBlockCipher {
+    @Getter
+    protected final BouncyCastleModeCTR alg;
+    protected final BouncyCastleBlockCipher delegate;
 
-    @Override
-    public PBlockCipherAlg alg() {
-        return BouncyCastleAES.INSTANCE;
+    public BouncyCastleModeCTR(@NonNull BouncyCastleModeCTR alg, @NonNull BouncyCastleBlockCipher delegate) {
+        super(delegate.engine());
+
+        this.alg = alg;
+        this.delegate = delegate;
     }
 
     @Override
     public void init(boolean encrypt, @NonNull PKey key) {
-        if (key instanceof BouncyCastleAES.Key) {
-            this.engine.init(encrypt, (BouncyCastleAES.Key) key);
-        } else {
-            throw new IllegalArgumentException(key.getClass().getCanonicalName());
-        }
     }
 
     @Override
     public void processBlock(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
-        if (src.readableBytes() < (128 >>> 3))  {
-            throw new IllegalArgumentException(String.format("Source buffer only has %d bytes readable (required: %d)", src.readableBytes(), 128 >>> 3));
-        }
-        dst.ensureWritable(128 >>> 3);
 
-        byte[] srcArray;
-        int srcArrayOffset;
-        if (src.hasArray()) {
-            srcArray = src.array();
-            srcArrayOffset = src.arrayOffset() + src.readerIndex();
-            src.skipBytes(128 >>> 3);
-        } else {
-            src.readBytes(srcArray = this.buffer, srcArrayOffset = 0, 128 >>> 3);
-        }
-
-        byte[] dstArray;
-        int dstArrayOffset;
-        if (dst.hasArray()) {
-            dstArray = dst.array();
-            dstArrayOffset = dst.arrayOffset() + dst.writerIndex();
-        } else {
-            dstArray = this.buffer;
-            dstArrayOffset = 128 >>> 3;
-        }
-
-        this.engine.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
-
-        if (dst.hasArray()) {
-            //increase writer index
-            dst.writerIndex(dst.writerIndex() + (128 >>> 3));
-        } else {
-            //copy encrypted bytes into destination buffer
-            dst.writeBytes(dstArray, dstArrayOffset, 128 >>> 3);
-        }
     }
 
     @Override

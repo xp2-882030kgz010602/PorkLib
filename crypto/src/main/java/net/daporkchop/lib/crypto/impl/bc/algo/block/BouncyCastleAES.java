@@ -13,7 +13,7 @@
  *
  */
 
-package net.daporkchop.lib.crypto.impl.bc.algo;
+package net.daporkchop.lib.crypto.impl.bc.algo.block;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -21,12 +21,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.alg.PCryptAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
-import net.daporkchop.lib.crypto.impl.bc.cipher.BouncyCastleCipherAES;
+import net.daporkchop.lib.crypto.impl.bc.cipher.block.BouncyCastleCipherAES;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.crypto.key.PKeyGenerator;
 import net.daporkchop.lib.unsafe.PUnsafe;

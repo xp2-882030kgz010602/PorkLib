@@ -43,11 +43,6 @@ public interface PCryptAlg {
     String name();
 
     /**
-     * @return a new {@link PCipher} capable of encrypting/decrypting data with this algorithm
-     */
-    PCipher cipher();
-
-    /**
      * @return a {@link PKeyGenerator} which can generate {@link net.daporkchop.lib.crypto.key.PKey}s suitable for use with this algorithm
      */
     PKeyGenerator keyGen();

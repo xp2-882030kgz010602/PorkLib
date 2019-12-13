@@ -13,42 +13,48 @@
  *
  */
 
-package crypto;
+package net.daporkchop.lib.crypto.impl.bc.algo.mode;
 
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
+import net.daporkchop.lib.crypto.alg.PBlockCipherMode;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
-import net.daporkchop.lib.crypto.impl.bc.algo.block.BouncyCastleAES;
 import net.daporkchop.lib.crypto.key.PKey;
-import net.daporkchop.lib.encoding.Hexadecimal;
-import org.junit.Test;
+import net.daporkchop.lib.crypto.key.PKeyGenerator;
 
 /**
+ * Implementation of {@link PBlockCipherMode} for BouncyCastle's CTR mode.
+ *
  * @author DaPorkchop_
  */
-public class CryptoTest {
-    @Test
-    public void test()  {
-        PBlockCipherAlg alg = BouncyCastleAES.INSTANCE;
-        byte[] srcData = new byte[alg.blockSize() << 2];
-        byte[] dstData = new byte[srcData.length];
-        PKey key = alg.keyGen().size(256 >>> 3).generate();
-        try (PBlockCipher cipher = alg.cipher())    {
-            cipher.init(true, key);
-            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
-        }
+@RequiredArgsConstructor
+@Getter
+@Accessors(fluent = true)
+public final class BouncyCastleCTR implements PBlockCipherMode {
+    @NonNull
+    protected final PBlockCipherAlg delegate;
 
-        System.out.println(Hexadecimal.encode(srcData));
-        System.out.println(Hexadecimal.encode(dstData));
+    @Override
+    public PBlockCipher cipher() {
+        return null;
+    }
 
-        System.arraycopy(dstData, 0, srcData, 0, srcData.length);
+    @Override
+    public String name() {
+        return this.delegate.name() + "/CTR";
+    }
 
-        try (PBlockCipher cipher = alg.cipher())    {
-            cipher.init(false, key);
-            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
-        }
+    @Override
+    public PKeyGenerator keyGen() {
+        return null;
+    }
 
-        System.out.println(Hexadecimal.encode(srcData));
-        System.out.println(Hexadecimal.encode(dstData));
+    @Override
+    public PKey decodeKey(int size, @NonNull ByteBuf src) {
+        return null;
     }
 }

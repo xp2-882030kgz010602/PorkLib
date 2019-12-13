@@ -13,42 +13,26 @@
  *
  */
 
-package crypto;
-
-import io.netty.buffer.Unpooled;
-import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
-import net.daporkchop.lib.crypto.cipher.PBlockCipher;
-import net.daporkchop.lib.crypto.impl.bc.algo.block.BouncyCastleAES;
-import net.daporkchop.lib.crypto.key.PKey;
-import net.daporkchop.lib.encoding.Hexadecimal;
-import org.junit.Test;
+package net.daporkchop.lib.crypto.alg;
 
 /**
+ * Represents a block cipher mode of operation, combined with an actual block cipher algorithm.
+ *
  * @author DaPorkchop_
  */
-public class CryptoTest {
-    @Test
-    public void test()  {
-        PBlockCipherAlg alg = BouncyCastleAES.INSTANCE;
-        byte[] srcData = new byte[alg.blockSize() << 2];
-        byte[] dstData = new byte[srcData.length];
-        PKey key = alg.keyGen().size(256 >>> 3).generate();
-        try (PBlockCipher cipher = alg.cipher())    {
-            cipher.init(true, key);
-            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
-        }
+public interface PBlockCipherMode extends PBlockCipherAlg {
+    /**
+     * @return the {@link PBlockCipherAlg} that this block cipher mode is wrapping
+     */
+    PBlockCipherAlg delegate();
 
-        System.out.println(Hexadecimal.encode(srcData));
-        System.out.println(Hexadecimal.encode(dstData));
+    @Override
+    default int blockSize() {
+        return this.delegate().blockSize();
+    }
 
-        System.arraycopy(dstData, 0, srcData, 0, srcData.length);
-
-        try (PBlockCipher cipher = alg.cipher())    {
-            cipher.init(false, key);
-            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
-        }
-
-        System.out.println(Hexadecimal.encode(srcData));
-        System.out.println(Hexadecimal.encode(dstData));
+    @Override
+    default int[] keySizes() {
+        return this.delegate().keySizes();
     }
 }
