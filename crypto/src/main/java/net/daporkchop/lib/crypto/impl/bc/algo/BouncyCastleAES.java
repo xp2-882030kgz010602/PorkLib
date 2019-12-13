@@ -17,14 +17,16 @@ package net.daporkchop.lib.crypto.impl.bc.algo;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.alg.PCryptAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
-import net.daporkchop.lib.crypto.cipher.PCipher;
+import net.daporkchop.lib.crypto.impl.bc.cipher.BouncyCastleCipherAES;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.crypto.key.PKeyGenerator;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -33,14 +35,25 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import java.util.Random;
 
 /**
+ * Implementation of {@link PBlockCipherAlg} for BouncyCastle AES.
+ *
  * @author DaPorkchop_
  */
-public abstract class BouncyCastleAES implements PBlockCipherAlg {
-    protected static final int[] AES_KEY_SIZES = { 128 >>> 3, 192 >>> 3, 256 >>> 3 };
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class BouncyCastleAES implements PBlockCipherAlg {
+    public static final BouncyCastleAES INSTANCE = new BouncyCastleAES();
+
+    protected static final int[] AES_KEY_SIZES = {128 >>> 3, 192 >>> 3, 256 >>> 3};
+
+    protected static void assertValidKeySize(int size) {
+        if (size != (128 >>> 3) && size != (192 >>> 3) && size != (256 >>> 3)) {
+            throw new IllegalArgumentException(String.valueOf(size));
+        }
+    }
 
     @Override
     public PBlockCipher cipher() {
-        return null;
+        return new BouncyCastleCipherAES();
     }
 
     @Override
@@ -55,7 +68,15 @@ public abstract class BouncyCastleAES implements PBlockCipherAlg {
 
     @Override
     public PKeyGenerator keyGen() {
-        return new KeyGen(this);
+        return new KeyGen();
+    }
+
+    @Override
+    public PKey decodeKey(int size, @NonNull ByteBuf src) {
+        assertValidKeySize(size);
+        byte[] key = new byte[size];
+        src.readBytes(key);
+        return PUnsafe.allocateInstance(Key.class).setKey(key);
     }
 
     @Override
@@ -63,20 +84,19 @@ public abstract class BouncyCastleAES implements PBlockCipherAlg {
         return AES_KEY_SIZES.clone();
     }
 
-    @RequiredArgsConstructor
     @Getter
     @Accessors(fluent = true)
-    public static final class KeyGen implements PKeyGenerator   {
-        @NonNull
-        protected final BouncyCastleAES alg;
-
+    public static final class KeyGen implements PKeyGenerator {
         protected int size = 128 >>> 3;
 
         @Override
+        public PCryptAlg alg() {
+            return BouncyCastleAES.INSTANCE;
+        }
+
+        @Override
         public PKeyGenerator size(int size) {
-            if (size != (128 >>> 3) && size != (192 >>> 3) && size != (256 >>> 3))  {
-                throw new IllegalArgumentException(String.valueOf(size));
-            }
+            assertValidKeySize(size);
             this.size = size;
             return this;
         }
@@ -89,7 +109,7 @@ public abstract class BouncyCastleAES implements PBlockCipherAlg {
         }
     }
 
-    public static final class Key extends KeyParameter implements PKey  {
+    public static final class Key extends KeyParameter implements PKey {
         private static final long KEY_OFFSET = PUnsafe.pork_getOffset(KeyParameter.class, "key");
 
         public Key(byte[] key) {
@@ -97,7 +117,8 @@ public abstract class BouncyCastleAES implements PBlockCipherAlg {
             throw new IllegalStateException();
         }
 
-        protected Key setKey(@NonNull byte[] key)   {
+        protected Key setKey(@NonNull byte[] key) {
+            assertValidKeySize(key.length);
             PUnsafe.putObject(this, KEY_OFFSET, key);
             return this;
         }
@@ -105,10 +126,6 @@ public abstract class BouncyCastleAES implements PBlockCipherAlg {
         @Override
         public int encodedSize() {
             return this.getKey().length;
-        }
-
-        @Override
-        public void decode(@NonNull ByteBuf src) {
         }
 
         @Override

@@ -13,56 +13,43 @@
  *
  */
 
-package net.daporkchop.lib.crypto.alg;
+package crypto;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+import io.netty.buffer.Unpooled;
+import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
+import net.daporkchop.lib.crypto.cipher.PBlockCipher;
 import net.daporkchop.lib.crypto.cipher.PCipher;
+import net.daporkchop.lib.crypto.impl.bc.algo.BouncyCastleAES;
 import net.daporkchop.lib.crypto.key.PKey;
-import net.daporkchop.lib.crypto.key.PKeyGenerator;
+import net.daporkchop.lib.encoding.Hexadecimal;
+import org.junit.Test;
 
 /**
- * Representation of a cryptographic algorithm.
- * <p>
- * This may be a full cipher configuration, or only a component (e.g. a block cipher padding mode).
- *
  * @author DaPorkchop_
- * @see PBlockCipherAlg
  */
-public interface PCryptAlg {
-    /**
-     * Gets this algorithm's textual name.
-     * <p>
-     * Examples:
-     * - {@code AES/CTR/NoPadding}
-     * - {@code AES}
-     * - {@code NoPadding}
-     *
-     * @return this algorithm's textual name
-     */
-    String name();
+public class CryptoTest {
+    @Test
+    public void test()  {
+        PBlockCipherAlg alg = BouncyCastleAES.INSTANCE;
+        byte[] srcData = new byte[alg.blockSize() << 2];
+        byte[] dstData = new byte[srcData.length];
+        PKey key = alg.keyGen().size(256 >>> 3).generate();
+        try (PBlockCipher cipher = alg.cipher())    {
+            cipher.init(true, key);
+            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
+        }
 
-    /**
-     * @return a new {@link PCipher} capable of encrypting/decrypting data with this algorithm
-     */
-    PCipher cipher();
+        System.out.println(Hexadecimal.encode(srcData));
+        System.out.println(Hexadecimal.encode(dstData));
 
-    /**
-     * @return a {@link PKeyGenerator} which can generate {@link net.daporkchop.lib.crypto.key.PKey}s suitable for use with this algorithm
-     */
-    PKeyGenerator keyGen();
+        System.arraycopy(dstData, 0, srcData, 0, srcData.length);
 
-    /**
-     * Decodes a key with the given size.
-     *
-     * @param size the size of the key
-     * @param src  the {@link ByteBuf} from which to read the key
-     * @return the decoded key
-     */
-    PKey decodeKey(int size, @NonNull ByteBuf src);
+        try (PBlockCipher cipher = alg.cipher())    {
+            cipher.init(false, key);
+            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
+        }
 
-    /**
-     * @return all key sizes allowed by this generator (in bytes)
-     */
-    int[] keySizes();
+        System.out.println(Hexadecimal.encode(srcData));
+        System.out.println(Hexadecimal.encode(dstData));
+    }
 }

@@ -38,38 +38,6 @@ public interface PBlockCipher extends PCipher {
     }
 
     /**
-     * Initializes this cipher.
-     *
-     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
-     * @param key     the key to use
-     */
-    @Override
-    default void init(boolean encrypt, @NonNull PKey key) {
-        ByteBuf keyBuf = key.encoded();
-        this.init(encrypt, keyBuf, null);
-        keyBuf.release();
-    }
-
-    /**
-     * Initializes this cipher.
-     *
-     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
-     * @param key     the key to use
-     */
-    default void init(boolean encrypt, @NonNull ByteBuf key)    {
-        this.init(encrypt, key, null);
-    }
-
-    /**
-     * Initializes this cipher.
-     *
-     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
-     * @param key     the key to use
-     * @param iv      the IV to use. If {@code null}, the IV will be 0.
-     */
-    void init(boolean encrypt, @NonNull ByteBuf key, ByteBuf iv);
-
-    /**
      * Processes a single block.
      *
      * @param src the {@link ByteBuf} from which to read data. Must have at least {@link #blockSize()} bytes readable!
@@ -94,5 +62,13 @@ public interface PBlockCipher extends PCipher {
         for (int i = src.readableBytes() / blockSize - 1; i >= 0; i--) {
             this.processBlock(src, dst);
         }
+    }
+
+    @Override
+    default long processedSize(long inputSize) {
+        if (inputSize % this.blockSize() != 0)  {
+            throw new IllegalStateException(String.format("input size %d is not a multiple of block size %d!", inputSize, this.blockSize()));
+        }
+        return inputSize;
     }
 }

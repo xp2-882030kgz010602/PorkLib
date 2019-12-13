@@ -15,6 +15,7 @@
 
 package net.daporkchop.lib.crypto.key;
 
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.crypto.alg.PCryptAlg;
 

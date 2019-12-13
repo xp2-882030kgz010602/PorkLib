@@ -30,13 +30,6 @@ public interface PKey {
     int encodedSize();
 
     /**
-     * Decodes this {@link PKey} from the encoded data in the given {@link ByteBuf}.
-     *
-     * @param src the {@link ByteBuf} to read data from. Must have at least {@link #encodedSize()} bytes readable!
-     */
-    void decode(@NonNull ByteBuf src);
-
-    /**
      * Encodes this {@link PKey} and returns the encoded key as a {@link ByteBuf}.
      * <p>
      * The returned {@link ByteBuf} must be released manually!

@@ -18,4 +18,6 @@ dependencies {
     compile project(":natives")
 
     compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+
+    testCompile project(":encoding")
 }
