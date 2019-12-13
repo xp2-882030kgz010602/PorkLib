@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleCTR;
 import net.daporkchop.lib.crypto.impl.bc.cipher.block.BouncyCastleBlockCipher;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -33,10 +34,10 @@ import org.bouncycastle.crypto.modes.SICBlockCipher;
 @Accessors(fluent = true)
 public final class BouncyCastleModeCTR extends SICBlockCipher implements PBlockCipher {
     @Getter
-    protected final BouncyCastleModeCTR alg;
+    protected final BouncyCastleCTR alg;
     protected final BouncyCastleBlockCipher delegate;
 
-    public BouncyCastleModeCTR(@NonNull BouncyCastleModeCTR alg, @NonNull BouncyCastleBlockCipher delegate) {
+    public BouncyCastleModeCTR(@NonNull BouncyCastleCTR alg, @NonNull BouncyCastleBlockCipher delegate) {
         super(delegate.engine());
 
         this.alg = alg;

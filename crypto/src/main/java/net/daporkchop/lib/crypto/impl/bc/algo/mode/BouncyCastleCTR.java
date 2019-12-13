@@ -23,6 +23,8 @@ import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.alg.PBlockCipherMode;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.impl.bc.cipher.block.BouncyCastleBlockCipher;
+import net.daporkchop.lib.crypto.impl.bc.cipher.mode.BouncyCastleModeCTR;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.crypto.key.PKeyGenerator;
 
@@ -31,30 +33,18 @@ import net.daporkchop.lib.crypto.key.PKeyGenerator;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-@Accessors(fluent = true)
-public final class BouncyCastleCTR implements PBlockCipherMode {
-    @NonNull
-    protected final PBlockCipherAlg delegate;
+public final class BouncyCastleCTR extends BouncyCastleBlockCipherMode {
+    public BouncyCastleCTR(@NonNull PBlockCipherAlg delegate) {
+        super(delegate);
+    }
 
     @Override
     public PBlockCipher cipher() {
-        return null;
+        return new BouncyCastleModeCTR(this, (BouncyCastleBlockCipher) this.delegate.cipher());
     }
 
     @Override
     public String name() {
         return this.delegate.name() + "/CTR";
-    }
-
-    @Override
-    public PKeyGenerator keyGen() {
-        return null;
-    }
-
-    @Override
-    public PKey decodeKey(int size, @NonNull ByteBuf src) {
-        return null;
     }
 }
