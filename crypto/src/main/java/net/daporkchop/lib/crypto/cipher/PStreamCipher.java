@@ -13,12 +13,42 @@
  *
  */
 
-dependencies {
-    compile project(":binary")
-    compile project(":math")
-    compile project(":natives")
+package net.daporkchop.lib.crypto.cipher;
 
-    compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
+import net.daporkchop.lib.crypto.alg.PCryptAlg;
+import net.daporkchop.lib.crypto.key.PKey;
 
-    testCompile project(":encoding")
+/**
+ * A symmetric cipher which encrypts data as a stream, allowing arbitrarily sized data to be encrypted without requiring
+ * padding.
+ *
+ * @author DaPorkchop_
+ */
+public interface PStreamCipher extends PCipher {
+    @Override
+    PCryptAlg alg();
+
+    @Override
+    void init(boolean encrypt, @NonNull PKey key);
+
+    /**
+     * Processes the given data.
+     * <p>
+     * If an implementation is also a {@link PBlockCipher}, using this method in combination with any of the following methods
+     * may cause issues with padding:
+     * - {@link PBlockCipher#processBlock(ByteBuf, ByteBuf)}
+     * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf)}
+     *
+     * @param src the {@link ByteBuf} containing the data to be processed
+     * @param dst the {@link ByteBuf} that the data should be written to. Must have at least as many bytes writable as the
+     *            source buffer has readable!
+     */
+    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
+
+    @Override
+    default long processedSize(long inputSize) {
+        return inputSize; //stream ciphers can always encrypt exactly the amount required
+    }
 }

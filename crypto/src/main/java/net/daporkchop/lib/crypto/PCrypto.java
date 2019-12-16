@@ -13,12 +13,17 @@
  *
  */
 
-dependencies {
-    compile project(":binary")
-    compile project(":math")
-    compile project(":natives")
+package net.daporkchop.lib.crypto;
 
-    compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+import lombok.experimental.UtilityClass;
 
-    testCompile project(":encoding")
+/**
+ * Base class for accessing ciphers and other things provided by PorkLib crypto.
+ * <p>
+ * Using this allows selecting the best implementation of an algorithm based on the system at runtime.
+ *
+ * @author DaPorkchop_
+ */
+@UtilityClass
+public class PCrypto {
 }

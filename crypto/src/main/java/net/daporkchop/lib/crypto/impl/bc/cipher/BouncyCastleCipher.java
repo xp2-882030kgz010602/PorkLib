@@ -13,12 +13,18 @@
  *
  */
 
-dependencies {
-    compile project(":binary")
-    compile project(":math")
-    compile project(":natives")
+package net.daporkchop.lib.crypto.impl.bc.cipher;
 
-    compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+import net.daporkchop.lib.crypto.cipher.PCipher;
 
-    testCompile project(":encoding")
+/**
+ * Base implementation of {@link PCipher} for all BouncyCastle cipher implementations.
+ *
+ * @author DaPorkchop_
+ */
+public interface BouncyCastleCipher extends PCipher {
+    @Override
+    default boolean heap() {
+        return true; //all BouncyCastle algorithms are pure Java
+    }
 }

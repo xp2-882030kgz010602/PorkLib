@@ -15,54 +15,52 @@
 
 package net.daporkchop.lib.crypto.cipher;
 
-import lombok.NonNull;
 import net.daporkchop.lib.crypto.alg.PCryptAlg;
-import net.daporkchop.lib.crypto.key.PKey;
-import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
- * Base representation of a cipher.
+ * A symmetric cipher which allows random access.
  * <p>
- * Implementations are not expected to be thread-safe, and may produce unexpected behavior if used from multiple threads.
+ * Encryption and decryption may be moved to any position without having to reset the cipher, and the encryption/decryption
+ * will proceed from there.
  *
  * @author DaPorkchop_
  */
-public interface PCipher extends Releasable {
-    /**
-     * @return the algorithm that this cipher is implementing
-     */
+public interface PSeekableCipher extends PStreamCipher {
+    @Override
     PCryptAlg alg();
 
     /**
-     * Initializes this cipher.
+     * Seeks to the given byte position.
+     * <p>
+     * The next encryption/decryption operation will proceed from the given position.
      *
-     * @param encrypt whether the cipher should be initialized to encryption or decryption mode
-     * @param key     the key to use
+     * @param position the new byte position to seek to
      */
-    void init(boolean encrypt, @NonNull PKey key);
+    void seek(long position);
 
     /**
-     * Calculates the data size produced by this cipher if provided with the given number of input bytes.
+     * Skips the given number of bytes.
      * <p>
-     * Note that the values returned by this method are a maximum, in practice the processed size may be smaller than
-     * reported by this method.
-     * <p>
-     * The cipher must be initialized before using this method.
+     * Equivalent to calling {@link #seek(long)} with the current {@link #position()} increased by the given amount, but
+     * may be useful with implementations that allow a larger seekable range than allowed by a long.
      *
-     * @param inputSize the size of the input data, in bytes
-     * @return the maximum size of the output data, in bytes
+     * @param amount the number of bytes to skip
      */
-    long processedSize(long inputSize);
+    default void skip(long amount) {
+        this.seek(this.position() + amount);
+    }
 
     /**
-     * Checks whether or not this cipher uses data on heap.
+     * Resets the cipher to its original position.
      * <p>
-     * If {@code false}, then this cipher uses direct memory access.
-     * <p>
-     * Ensuring that data which is passed to/from this cipher is on/off-heap depending on the result of this method can
-     * be significantly beneficial to performance.
-     *
-     * @return whether or not this cipher uses data on heap
+     * Equivalent to calling {@link #seek(long)} with {@code 0L}.
      */
-    boolean heap();
+    default void reset() {
+        this.seek(0L);
+    }
+
+    /**
+     * @return the cipher's current byte position
+     */
+    long position();
 }

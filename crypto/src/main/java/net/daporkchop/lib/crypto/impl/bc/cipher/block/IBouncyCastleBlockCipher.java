@@ -18,6 +18,7 @@ package net.daporkchop.lib.crypto.impl.bc.cipher.block;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.impl.bc.cipher.BouncyCastleCipher;
 import org.bouncycastle.crypto.BlockCipher;
 
 /**
@@ -25,7 +26,7 @@ import org.bouncycastle.crypto.BlockCipher;
  *
  * @author DaPorkchop_
  */
-public interface IBouncyCastleBlockCipher extends PBlockCipher {
+public interface IBouncyCastleBlockCipher extends PBlockCipher, BouncyCastleCipher {
     /**
      * @return a {@code byte[]} which is exactly 2x this cipher's block size
      */

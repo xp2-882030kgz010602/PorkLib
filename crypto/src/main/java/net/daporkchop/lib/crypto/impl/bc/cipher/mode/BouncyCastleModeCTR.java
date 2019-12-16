@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.cipher.PSeekableCipher;
 import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleBlockCipherMode;
 import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleCTR;
 import net.daporkchop.lib.crypto.impl.bc.cipher.block.BouncyCastleBlockCipher;
@@ -34,7 +35,7 @@ import org.bouncycastle.crypto.modes.SICBlockCipher;
  * @author DaPorkchop_
  */
 @Accessors(fluent = true)
-public final class BouncyCastleModeCTR extends SICBlockCipher implements IBouncyCastleBlockCipher {
+public final class BouncyCastleModeCTR extends SICBlockCipher implements IBouncyCastleBlockCipher, PSeekableCipher {
     @Getter
     protected final BouncyCastleCTR alg;
     protected final BouncyCastleBlockCipher delegate;
@@ -69,5 +70,25 @@ public final class BouncyCastleModeCTR extends SICBlockCipher implements IBouncy
     @Override
     public void release() throws AlreadyReleasedException {
         //no-op
+    }
+
+    //stream cipher implementations
+    @Override
+    public void seek(long position) {
+        super.seekTo(position);
+    }
+
+    @Override
+    public long position() {
+        return super.getPosition();
+    }
+
+    @Override
+    public void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
+        //TODO: optimize this
+        dst.ensureWritable(src.readableBytes());
+        while (src.isReadable())    {
+            dst.writeByte(super.calculateByte(src.readByte()));
+        }
     }
 }

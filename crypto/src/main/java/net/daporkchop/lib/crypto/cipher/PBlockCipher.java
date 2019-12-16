@@ -18,17 +18,20 @@ package net.daporkchop.lib.crypto.cipher;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
-import net.daporkchop.lib.crypto.alg.PCryptAlg;
 import net.daporkchop.lib.crypto.key.PKey;
+import net.daporkchop.lib.math.primitive.PMath;
 
 /**
- * A variant of {@link PCipher} which symmetrically encrypts data in fixed-size blocks.
+ * A cipher which symmetrically encrypts data in fixed-size blocks.
  *
  * @author DaPorkchop_
  */
 public interface PBlockCipher extends PCipher {
     @Override
     PBlockCipherAlg alg();
+
+    @Override
+    void init(boolean encrypt, @NonNull PKey key);
 
     /**
      * @return this cipher's block size (in bytes)
@@ -39,6 +42,10 @@ public interface PBlockCipher extends PCipher {
 
     /**
      * Processes a single block.
+     * <p>
+     * If this implementation is also a {@link PStreamCipher}, using this method in combination with any of the following methods
+     * may cause issues with padding:
+     * - {@link PStreamCipher#process(ByteBuf, ByteBuf)}
      *
      * @param src the {@link ByteBuf} from which to read data. Must have at least {@link #blockSize()} bytes readable!
      * @param dst the {@link ByteBuf} to which to write data
@@ -49,6 +56,10 @@ public interface PBlockCipher extends PCipher {
      * Processes multiple blocks.
      * <p>
      * Source buffer must be a multiple of {@link #blockSize()} bytes.
+     * <p>
+     * If this implementation is also a {@link PStreamCipher}, using this method in combination with any of the following methods
+     * may cause issues with padding:
+     * - {@link PStreamCipher#process(ByteBuf, ByteBuf)}
      *
      * @param src the {@link ByteBuf} from which to read data
      * @param dst the {@link ByteBuf} to which to write data
@@ -66,9 +77,6 @@ public interface PBlockCipher extends PCipher {
 
     @Override
     default long processedSize(long inputSize) {
-        if (inputSize % this.blockSize() != 0)  {
-            throw new IllegalStateException(String.format("input size %d is not a multiple of block size %d!", inputSize, this.blockSize()));
-        }
-        return inputSize;
+        return PMath.roundUp(inputSize, this.blockSize());
     }
 }
