@@ -19,6 +19,7 @@ import io.netty.buffer.Unpooled;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
 import net.daporkchop.lib.crypto.impl.bc.algo.block.BouncyCastleAES;
+import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleCTR;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.encoding.Hexadecimal;
 import org.junit.Test;
@@ -29,8 +30,17 @@ import org.junit.Test;
 public class CryptoTest {
     @Test
     public void test()  {
-        PBlockCipherAlg alg = BouncyCastleAES.INSTANCE;
-        byte[] srcData = new byte[alg.blockSize() << 2];
+        final PBlockCipherAlg alg;
+        if (false)  {
+            alg = BouncyCastleAES.INSTANCE;
+        } else if (true)    {
+            alg = new BouncyCastleCTR(BouncyCastleAES.INSTANCE);
+        }
+
+        final int blocks = 4;
+        final int blockSize = alg.blockSize();
+
+        byte[] srcData = new byte[blockSize * blocks];
         byte[] dstData = new byte[srcData.length];
         PKey key = alg.keyGen().size(256 >>> 3).generate();
         try (PBlockCipher cipher = alg.cipher())    {
@@ -38,8 +48,10 @@ public class CryptoTest {
             cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
         }
 
-        System.out.println(Hexadecimal.encode(srcData));
-        System.out.println(Hexadecimal.encode(dstData));
+        for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(srcData, blockSize * i, blockSize));
+        System.out.println(Hexadecimal.encode(srcData, blockSize * (blocks - 1), blockSize));
+        for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(dstData, blockSize * i, blockSize));
+        System.out.println(Hexadecimal.encode(dstData, blockSize * (blocks - 1), blockSize));
 
         System.arraycopy(dstData, 0, srcData, 0, srcData.length);
 
@@ -48,7 +60,9 @@ public class CryptoTest {
             cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
         }
 
-        System.out.println(Hexadecimal.encode(srcData));
-        System.out.println(Hexadecimal.encode(dstData));
+        for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(srcData, blockSize * i, blockSize));
+        System.out.println(Hexadecimal.encode(srcData, blockSize * (blocks - 1), blockSize));
+        for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(dstData, blockSize * i, blockSize));
+        System.out.println(Hexadecimal.encode(dstData, blockSize * (blocks - 1), blockSize));
     }
 }

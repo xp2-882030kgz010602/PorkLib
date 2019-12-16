@@ -15,7 +15,6 @@
 
 package net.daporkchop.lib.crypto.impl.bc.cipher.block;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -27,21 +26,22 @@ import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 
 /**
- * Base implementation of
+ * Base implementation of {@link PBlockCipher} for all BouncyCastle-based block ciphers.
  *
  * @author DaPorkchop_
  */
 @Accessors(fluent = true)
-public abstract class BouncyCastleBlockCipher<B extends BlockCipher, K extends PKey & CipherParameters> implements PBlockCipher {
+public abstract class BouncyCastleBlockCipher<B extends BlockCipher, K extends PKey & CipherParameters> implements IBouncyCastleBlockCipher {
     @Getter
     protected final B engine;
+    @Getter
     protected final byte[] buffer;
     protected final Class<K> keyClass;
 
     @Getter
     protected final int blockSize;
 
-    public BouncyCastleBlockCipher(@NonNull B engine)    {
+    public BouncyCastleBlockCipher(@NonNull B engine) {
         this.engine = engine;
         this.buffer = new byte[(this.blockSize = engine.getBlockSize()) * 2];
 
@@ -49,48 +49,9 @@ public abstract class BouncyCastleBlockCipher<B extends BlockCipher, K extends P
     }
 
     @Override
-    public void processBlock(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
-        final int blockSize = this.blockSize;
-        if (src.readableBytes() < blockSize)  {
-            throw new IllegalArgumentException(String.format("Source buffer only has %d bytes readable (required: %d)", src.readableBytes(), 128 >>> 3));
-        }
-        dst.ensureWritable(blockSize);
-
-        byte[] srcArray;
-        int srcArrayOffset;
-        if (src.hasArray()) {
-            srcArray = src.array();
-            srcArrayOffset = src.arrayOffset() + src.readerIndex();
-            src.skipBytes(blockSize);
-        } else {
-            src.readBytes(srcArray = this.buffer, srcArrayOffset = 0, blockSize);
-        }
-
-        byte[] dstArray;
-        int dstArrayOffset;
-        if (dst.hasArray()) {
-            dstArray = dst.array();
-            dstArrayOffset = dst.arrayOffset() + dst.writerIndex();
-        } else {
-            dstArray = this.buffer;
-            dstArrayOffset = blockSize;
-        }
-
-        this.engine.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
-
-        if (dst.hasArray()) {
-            //increase writer index
-            dst.writerIndex(dst.writerIndex() + blockSize);
-        } else {
-            //copy encrypted bytes into destination buffer
-            dst.writeBytes(dstArray, dstArrayOffset, blockSize);
-        }
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public void init(boolean encrypt, @NonNull PKey key) {
-        if (key.getClass() == this.keyClass)    {
+        if (key.getClass() == this.keyClass) {
             this.engine.init(encrypt, (K) key);
         } else {
             throw new IllegalArgumentException(String.format("Invalid key type \"%s\", expected \"%s\"!", key.getClass().getCanonicalName(), this.keyClass.getCanonicalName()));

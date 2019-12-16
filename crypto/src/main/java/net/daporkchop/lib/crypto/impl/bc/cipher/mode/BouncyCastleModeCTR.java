@@ -21,8 +21,10 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleBlockCipherMode;
 import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleCTR;
 import net.daporkchop.lib.crypto.impl.bc.cipher.block.BouncyCastleBlockCipher;
+import net.daporkchop.lib.crypto.impl.bc.cipher.block.IBouncyCastleBlockCipher;
 import net.daporkchop.lib.crypto.key.PKey;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import org.bouncycastle.crypto.BlockCipher;
@@ -32,25 +34,36 @@ import org.bouncycastle.crypto.modes.SICBlockCipher;
  * @author DaPorkchop_
  */
 @Accessors(fluent = true)
-public final class BouncyCastleModeCTR extends SICBlockCipher implements PBlockCipher {
+public final class BouncyCastleModeCTR extends SICBlockCipher implements IBouncyCastleBlockCipher {
     @Getter
     protected final BouncyCastleCTR alg;
     protected final BouncyCastleBlockCipher delegate;
+
+    @Getter
+    protected final byte[] buffer;
+
+    protected final int blockSize;
 
     public BouncyCastleModeCTR(@NonNull BouncyCastleCTR alg, @NonNull BouncyCastleBlockCipher delegate) {
         super(delegate.engine());
 
         this.alg = alg;
         this.delegate = delegate;
+        this.buffer = new byte[(this.blockSize = delegate.blockSize()) << 1];
+    }
+
+    @Override
+    public BlockCipher engine() {
+        return this;
     }
 
     @Override
     public void init(boolean encrypt, @NonNull PKey key) {
-    }
-
-    @Override
-    public void processBlock(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
-
+        if (key instanceof BouncyCastleBlockCipherMode.WrappedIVKey)    {
+            super.init(encrypt, (BouncyCastleBlockCipherMode.WrappedIVKey) key);
+        } else {
+            throw new IllegalArgumentException(String.format("Invalid key type \"%s\", expected \"%s\"!", key.getClass().getCanonicalName(), BouncyCastleBlockCipherMode.WrappedIVKey.class.getCanonicalName()));
+        }
     }
 
     @Override

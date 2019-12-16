@@ -23,7 +23,9 @@ import net.daporkchop.lib.crypto.cipher.PBlockCipher;
  * @author DaPorkchop_
  */
 public interface PBlockCipherAlg extends PCryptAlg {
-    @Override
+    /**
+     * @return a new {@link PBlockCipher} backed by this algorithm
+     */
     PBlockCipher cipher();
 
     /**
