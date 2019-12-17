@@ -63,15 +63,39 @@ public interface PBlockCipher extends PCipher {
      *
      * @param src the {@link ByteBuf} from which to read data
      * @param dst the {@link ByteBuf} to which to write data
+     *            @see #processBlocks(ByteBuf, ByteBuf, int)
      */
     default void processBlocks(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
         int blockSize = this.blockSize();
         if (src.readableBytes() % blockSize != 0) {
-            throw new IllegalArgumentException(String.format("src buffers must be a multiple of block size! (src=%d,block size=%d)", src.readableBytes(), blockSize));
+            throw new IllegalArgumentException(String.format("src buffer must be a multiple of block size! (src=%d,block size=%d)", src.readableBytes(), blockSize));
         }
-        dst.ensureWritable(src.readableBytes());
-        for (int i = src.readableBytes() / blockSize - 1; i >= 0; i--) {
-            this.processBlock(src, dst);
+        this.processBlocks(src, dst, src.readableBytes() / blockSize);
+    }
+
+    /**
+     * Processes multiple blocks.
+     * <p>
+     * If this implementation is also a {@link PStreamCipher}, using this method in combination with any of the following methods
+     * may cause issues with padding:
+     * - {@link PStreamCipher#process(ByteBuf, ByteBuf)}
+     *
+     * @param src    the {@link ByteBuf} from which to read data
+     * @param dst    the {@link ByteBuf} to which to write data
+     * @param blocks the number of blocks to process
+     */
+    default void processBlocks(@NonNull ByteBuf src, @NonNull ByteBuf dst, int blocks) {
+        if (blocks < 0) {
+            throw new IllegalArgumentException(String.valueOf(blocks));
+        } else if (blocks > 0) {
+            int blockSize = this.blockSize();
+            if ((long) src.readableBytes() < (long) blocks * (long) blockSize) {
+                throw new IllegalArgumentException(String.format("Insufficient data to process %d blocks @ %d bytes (src=%d, needed=%d)", blocks, blockSize, src.readableBytes(), (long) blocks * (long) blockSize));
+            }
+            dst.ensureWritable(blocks * blockSize); //blocks * blockSize can never be larger than Integer.MAX_VALUE any more
+            while (--blocks >= 0){
+                this.processBlock(src, dst);
+            }
         }
     }
 

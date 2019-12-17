@@ -50,7 +50,6 @@ public interface IBouncyCastleBlockCipher extends PBlockCipher, BouncyCastleCiph
         if (src.hasArray()) {
             srcArray = src.array();
             srcArrayOffset = src.arrayOffset() + src.readerIndex();
-            src.skipBytes(blockSize);
         } else {
             src.readBytes(srcArray = this.buffer(), srcArrayOffset = 0, blockSize);
         }
@@ -67,12 +66,57 @@ public interface IBouncyCastleBlockCipher extends PBlockCipher, BouncyCastleCiph
 
         this.engine().processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
 
+        if (src.hasArray()) {
+            //increase reader index
+            src.skipBytes(blockSize);
+        }
+
         if (dst.hasArray()) {
             //increase writer index
             dst.writerIndex(dst.writerIndex() + blockSize);
         } else {
             //copy encrypted bytes into destination buffer
             dst.writeBytes(dstArray, dstArrayOffset, blockSize);
+        }
+    }
+
+    @Override
+    default void processBlocks(@NonNull ByteBuf src, @NonNull ByteBuf dst, int blocks) {
+        if (blocks < 0) {
+            throw new IllegalArgumentException(String.valueOf(blocks));
+        } else if (blocks > 0) {
+            int blockSize = this.blockSize();
+            if ((long) src.readableBytes() < (long) blocks * (long) blockSize) {
+                throw new IllegalArgumentException(String.format("Not enough data to process %d blocks @ %d bytes (src=%d, needed=%d)", blocks, blockSize, src.readableBytes(), (long) blocks * (long) blockSize));
+            }
+            int dataSize = blocks * blockSize; //blocks * blockSize can never be larger than Integer.MAX_VALUE any more
+            dst.ensureWritable(dataSize);
+
+            if (src.hasArray() && dst.hasArray())   {
+                //we can only do this if both src and dst have an array, otherwise the buffer is useless
+
+                byte[] srcArray = src.array();
+                int srcArrayOffset = src.arrayOffset() + src.readerIndex();
+
+                byte[] dstArray = dst.array();
+                int dstArrayOffset = dst.arrayOffset() + dst.writerIndex();
+
+                BlockCipher engine = this.engine();
+                while (--blocks >= 0)   {
+                    engine.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
+                    srcArrayOffset += blockSize;
+                    dstArrayOffset += blockSize;
+                }
+
+                //increase reader+writer indices
+                src.skipBytes(dataSize);
+                dst.writerIndex(dst.writerIndex() + blockSize);
+            } else {
+                //if either one is direct we have to go the slow way
+                while (--blocks >= 0)    {
+                    this.processBlock(src, dst);
+                }
+            }
         }
     }
 }

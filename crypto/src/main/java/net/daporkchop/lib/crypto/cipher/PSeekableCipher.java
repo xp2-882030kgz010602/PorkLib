@@ -39,18 +39,6 @@ public interface PSeekableCipher extends PStreamCipher {
     void seek(long position);
 
     /**
-     * Skips the given number of bytes.
-     * <p>
-     * Equivalent to calling {@link #seek(long)} with the current {@link #position()} increased by the given amount, but
-     * may be useful with implementations that allow a larger seekable range than allowed by a long.
-     *
-     * @param amount the number of bytes to skip
-     */
-    default void skip(long amount) {
-        this.seek(this.position() + amount);
-    }
-
-    /**
      * Resets the cipher to its original position.
      * <p>
      * Equivalent to calling {@link #seek(long)} with {@code 0L}.

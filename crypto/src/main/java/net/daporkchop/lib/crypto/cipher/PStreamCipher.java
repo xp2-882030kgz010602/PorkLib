@@ -40,12 +40,30 @@ public interface PStreamCipher extends PCipher {
      * may cause issues with padding:
      * - {@link PBlockCipher#processBlock(ByteBuf, ByteBuf)}
      * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf)}
+     * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf, int)}
      *
      * @param src the {@link ByteBuf} containing the data to be processed
      * @param dst the {@link ByteBuf} that the data should be written to. Must have at least as many bytes writable as the
      *            source buffer has readable!
      */
-    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst);
+    default void process(@NonNull ByteBuf src, @NonNull ByteBuf dst)    {
+        this.process(src, dst, src.readableBytes());
+    }
+
+    /**
+     * Processes the given data.
+     * <p>
+     * If an implementation is also a {@link PBlockCipher}, using this method in combination with any of the following methods
+     * may cause issues with padding:
+     * - {@link PBlockCipher#processBlock(ByteBuf, ByteBuf)}
+     * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf)}
+     * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf, int)}
+     *
+     * @param src the {@link ByteBuf} containing the data to be processed Must have at least {@code size} bytes readable!
+     * @param dst the {@link ByteBuf} that the data should be written to
+     *            @param size the number of bytes to process
+     */
+    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst, int size);
 
     @Override
     default long processedSize(long inputSize) {
