@@ -15,22 +15,16 @@
 
 package net.daporkchop.lib.crypto.alg;
 
-import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.cipher.PCipher;
 
 /**
- * A {@link PCryptAlg} which is specialized for block ciphers.
+ * A {@link PCryptAlg} which supports creating a cipher.
  *
  * @author DaPorkchop_
  */
-public interface PBlockCipherAlg extends PCipherAlg {
+public interface PCipherAlg extends PCryptAlg {
     /**
-     * @return a new {@link PBlockCipher} backed by this algorithm
+     * @return a new {@link PCipher} backed by this algorithm
      */
-    @Override
-    PBlockCipher cipher();
-
-    /**
-     * @return this algorithm's block size (in bytes)
-     */
-    int blockSize();
+    PCipher cipher();
 }

@@ -15,22 +15,27 @@
 
 package net.daporkchop.lib.crypto.alg;
 
-import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import lombok.NonNull;
+
+import java.util.Collection;
 
 /**
- * A {@link PCryptAlg} which is specialized for block ciphers.
+ * Provides instances of {@link PCryptAlg} based on their name.
  *
  * @author DaPorkchop_
  */
-public interface PBlockCipherAlg extends PCipherAlg {
+public interface PCryptProvider {
     /**
-     * @return a new {@link PBlockCipher} backed by this algorithm
+     * Gets an algorithm by its name.
+     *
+     * @param name the name of the algorithm
+     * @return the algorithm with the given name
+     * @throws IllegalArgumentException if this provider does not support the given algorithm
      */
-    @Override
-    PBlockCipher cipher();
+    PCryptAlg get(@NonNull String name) throws IllegalArgumentException;
 
     /**
-     * @return this algorithm's block size (in bytes)
+     * @return the names of all algorithms supported by this provider
      */
-    int blockSize();
+    Collection<String> supportedAlgorithms();
 }

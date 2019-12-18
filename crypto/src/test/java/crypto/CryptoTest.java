@@ -16,6 +16,7 @@
 package crypto;
 
 import io.netty.buffer.Unpooled;
+import net.daporkchop.lib.crypto.PCrypto;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
 import net.daporkchop.lib.crypto.cipher.PSeekableCipher;
@@ -35,8 +36,10 @@ public class CryptoTest {
         final PBlockCipherAlg alg;
         if (false)  {
             alg = BouncyCastleAES.INSTANCE;
-        } else if (true)    {
+        } else if (false)    {
             alg = new BouncyCastleCTR(BouncyCastleAES.INSTANCE);
+        } else if (true)    {
+            alg = (PBlockCipherAlg) PCrypto.cipher("AES/CTR");
         }
 
         final int blocks = 4;
