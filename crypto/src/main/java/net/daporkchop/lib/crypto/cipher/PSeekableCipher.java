@@ -15,6 +15,7 @@
 
 package net.daporkchop.lib.crypto.cipher;
 
+import io.netty.buffer.ByteBuf;
 import net.daporkchop.lib.crypto.alg.PCryptAlg;
 
 /**
@@ -33,6 +34,12 @@ public interface PSeekableCipher extends PStreamCipher {
      * Seeks to the given byte position.
      * <p>
      * The next encryption/decryption operation will proceed from the given position.
+     * <p>
+     * If an implementation is also a {@link PBlockCipher}, using this method in combination with any of the following methods
+     * without the new position being a multiple of the block size may cause issues with padding:
+     * - {@link PBlockCipher#processBlock(ByteBuf, ByteBuf)}
+     * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf)}
+     * - {@link PBlockCipher#processBlocks(ByteBuf, ByteBuf, int)}
      *
      * @param position the new byte position to seek to
      */

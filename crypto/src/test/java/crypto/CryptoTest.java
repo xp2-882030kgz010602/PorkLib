@@ -18,6 +18,8 @@ package crypto;
 import io.netty.buffer.Unpooled;
 import net.daporkchop.lib.crypto.alg.PBlockCipherAlg;
 import net.daporkchop.lib.crypto.cipher.PBlockCipher;
+import net.daporkchop.lib.crypto.cipher.PSeekableCipher;
+import net.daporkchop.lib.crypto.cipher.PStreamCipher;
 import net.daporkchop.lib.crypto.impl.bc.algo.block.BouncyCastleAES;
 import net.daporkchop.lib.crypto.impl.bc.algo.mode.BouncyCastleCTR;
 import net.daporkchop.lib.crypto.key.PKey;
@@ -42,21 +44,31 @@ public class CryptoTest {
 
         byte[] srcData = new byte[blockSize * blocks];
         byte[] dstData = new byte[srcData.length];
+        byte[] dstData2 = new byte[srcData.length];
         PKey key = alg.keyGen().size(256 >>> 3).generate();
         try (PBlockCipher cipher = alg.cipher())    {
             cipher.init(true, key);
             cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
+            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
+        }
+        try (PBlockCipher cipher = alg.cipher())    {
+            cipher.init(true, key);
+            ((PSeekableCipher) cipher).seek(srcData.length);
+            ((PStreamCipher) cipher).process(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData2).clear());
         }
 
         for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(srcData, blockSize * i, blockSize));
         System.out.println(Hexadecimal.encode(srcData, blockSize * (blocks - 1), blockSize));
         for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(dstData, blockSize * i, blockSize));
         System.out.println(Hexadecimal.encode(dstData, blockSize * (blocks - 1), blockSize));
+        for (int i = 0; i < blocks - 1; i++) System.out.printf("%s ", Hexadecimal.encode(dstData2, blockSize * i, blockSize));
+        System.out.println(Hexadecimal.encode(dstData2, blockSize * (blocks - 1), blockSize));
 
         System.arraycopy(dstData, 0, srcData, 0, srcData.length);
 
         try (PBlockCipher cipher = alg.cipher())    {
             cipher.init(false, key);
+            cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
             cipher.processBlocks(Unpooled.wrappedBuffer(srcData), Unpooled.wrappedBuffer(dstData).clear());
         }
 

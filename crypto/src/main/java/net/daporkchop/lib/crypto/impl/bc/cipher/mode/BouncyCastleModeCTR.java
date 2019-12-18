@@ -144,10 +144,10 @@ public final class BouncyCastleModeCTR extends SICBlockCipher implements IBouncy
             if (src.readableBytes() < size) {
                 throw new IllegalArgumentException(String.format("Not enough data to process %d bytes (src=%d)", size, src.readableBytes()));
             }
+            final int originalSize = size;
             dst.ensureWritable(size);
 
             final int blockSize = this.blockSize;
-            int byteCount = PUnsafe.getInt(this, BYTECOUNT_OFFSET);
 
             boolean srcHasArray = src.hasArray();
             boolean dstHasArray = dst.hasArray();
@@ -167,10 +167,27 @@ public final class BouncyCastleModeCTR extends SICBlockCipher implements IBouncy
                 //stop if we are already done
                 if (size == 0) return;
 
-                int blocks = size / blockSize;
-                if (blocks != 0)    {
-                    //calculate full blocks at a time
-                } //TODO: finish this
+                //do whole blocks at a time
+                for (int blocks = size / blockSize; blocks > 0; blocks--)   {
+                    this.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
+                    srcArrayOffset += blockSize;
+                    dstArrayOffset += blockSize;
+                    size -= blockSize;
+                }
+
+                //do final bytes
+                while (size-- > 0)    {
+                    dstArray[dstArrayOffset++] = this.calculateByte(srcArray[srcArrayOffset++]);
+                }
+
+                //bump reader/writer indexes
+                src.skipBytes(originalSize);
+                dst.writerIndex(dst.writerIndex() + originalSize);
+            } else {
+                //amazingly slow mode
+                while (size-- > 0)    {
+                    dst.writeByte(this.calculateByte(src.readByte()));
+                }
             }
         }
     }
