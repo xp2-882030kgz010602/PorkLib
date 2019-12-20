@@ -68,17 +68,35 @@ public interface PCipher extends Releasable {
     void dst(@NonNull ByteBuf dst);
 
     /**
+     * Processes all of the given source data, start to finish and writes it to the given destination buffer.
+     *
+     * @param src the {@link ByteBuf} to read data from
+     * @param dst the {@link ByteBuf} to write processed data to
+     */
+    default void fullProcess(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
+        if (!src.isReadable()) return;
+        dst.ensureWritable(src.readableBytes());
+
+        this.src(src);
+        this.dst(dst);
+
+        do {
+            this.finish();
+        } while (!this.finished() && dst.ensureWritable(8192).isWritable());
+    }
+
+    /**
      * Processes as much data as possible.
      * <p>
      * This will continue reading, processing and writing data until the source buffer is emptied or the destination buffer
      * is filled.
      * <p>
-     * Note that the source buffer may not be completely drained if this cipher only processes data in blocks ({@link #usesBlocks()} is {@code true}).
-     * <p>
      * Note that more data may be read than the amount written, in case this cipher internally buffers data and
      * does not have enough source data or destination space available.
+     *
+     * @throws IllegalArgumentException if this cipher only accepts data in blocks, and there is an amount of data remaining in the source buffer that is not a multiple of {@link #blockSize()}
      */
-    void process();
+    void process() throws IllegalArgumentException;
 
     /**
      * Attempts to flush this cipher's internal buffer, possibly applying some kind of padding to the buffered data.
@@ -105,8 +123,10 @@ public interface PCipher extends Releasable {
      * The value of {@link #finished()} may not be set to {@code true} after calling this method in the event that the destination
      * buffer is full. In such a case the destination buffer should be reconfigured with more writable space and this method
      * called again.
+     *
+     * @throws IllegalArgumentException if this cipher only accepts data in blocks, and there is an amount of data remaining in the source buffer that is not a multiple of {@link #blockSize()}
      */
-    void finish();
+    void finish() throws IllegalArgumentException;
 
     /**
      * @return whether or not data processing has been finished
@@ -150,7 +170,9 @@ public interface PCipher extends Releasable {
     /**
      * @return the required size of an IV for this cipher, or {@code -1} if this cipher does not use an IV
      */
-    int ivSize();
+    default int ivSize()    {
+        return this.blockSize();
+    }
 
     /**
      * @return whether or not this cipher uses an IV
