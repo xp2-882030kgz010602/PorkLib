@@ -16,10 +16,12 @@
 package net.daporkchop.lib.crypto.bc.block;
 
 import io.netty.buffer.ByteBuf;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.daporkchop.lib.crypto.bc.BouncyCastleCipher;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.params.KeyParameter;
 
@@ -36,43 +38,68 @@ public final class BouncyCastleAES extends AESEngine implements BouncyCastleBloc
 
     protected static final int BLOCK_SIZE = 128 >>> 3;
 
+    @Getter
     @Setter
     @NonNull
     protected ByteBuf src;
+    @Getter
     @Setter
     @NonNull
     protected ByteBuf dst;
 
-    protected final byte[] buffer = new byte[BLOCK_SIZE << 1];
+    @Getter
+    protected final byte[] globalBuffer = new byte[BLOCK_SIZE];
+
+    protected final KeyParameter param = PUnsafe.allocateInstance(KeyParameter.class);
+
+    @Getter
+    protected boolean finished = false;
+
+    public BouncyCastleAES()    {
+    }
 
     @Override
     public void init(boolean encrypt, @NonNull ByteBuf key) {
-        if (!this.keySizeSupported(key.readableBytes())) {
+        final int keySize = key.readableBytes();
+        if (!this.keySizeSupported(keySize)) {
             throw new IllegalArgumentException(String.format("AES does not support keys @ %d bytes!", key.readableBytes()));
         }
-        //TODO
-        this.init(encrypt, new KeyParameter(key.array()));
+
+        byte[] keyArray = this.param.getKey();
+        if (keyArray == null || keyArray.length != keySize) {
+            PUnsafe.putObject(this.param, KEYPARAMETER_KEY_OFFSET, keyArray = new byte[keySize]);
+        }
+        key.readBytes(keyArray);
+
+        //actually init cipher
+        super.init(encrypt, this.param);
+
+        this.src = null;
+        this.dst = null;
+
+        this.finished = false;
     }
 
     @Override
     public void process() throws IllegalArgumentException {
+        this._assertConfigured();
+
         int srcReadable = this.src.readableBytes();
         int dstWritable = this.dst.writableBytes();
 
-        //don't process anything if neither buffer has enough space
-        if (srcReadable < BLOCK_SIZE || dstWritable < BLOCK_SIZE)   {
-            return;
-        } else if ((srcReadable & 0xF) != 0)    {
+        if ((srcReadable & 0xF) != 0)    {
             throw new IllegalArgumentException(String.format("AES requires data to be a multiple of %d bytes (readable: %d)", BLOCK_SIZE, srcReadable));
+        } else if (srcReadable == 0 || dstWritable < srcReadable)   {
+            return;
         }
 
-        final byte[] globalBuffer = this.buffer;
+        final byte[] globalBuffer = this.globalBuffer;
 
         final byte[] srcArray;
         int srcArrayOffset;
         if (this.src.hasArray())    {
             srcArray = this.src.array();
-            srcArrayOffset = this.src.arrayOffset() + this.src.readerIndex();
+            srcArrayOffset = this.src.arrayOffset() + this.src.readerIndex() - BLOCK_SIZE;
         } else {
             srcArray = globalBuffer;
             srcArrayOffset = 0;
@@ -85,42 +112,47 @@ public final class BouncyCastleAES extends AESEngine implements BouncyCastleBloc
             dstArrayOffset = this.dst.arrayOffset() + this.dst.arrayOffset();
         } else {
             dstArray = globalBuffer;
-            dstArrayOffset = BLOCK_SIZE;
+            dstArrayOffset = 0;
         }
 
-        for (int i = srcReadable / BLOCK_SIZE - 1; i >= 0; i--) {
+        for (int i = srcReadable / BLOCK_SIZE - 1; i >= 0 && srcReadable != 0 && dstWritable >= srcReadable; i--, srcReadable = this.src.readableBytes(), dstWritable = this.dst.writableBytes()) {
             if (srcArray == globalBuffer)   {
                 //copy source data into array if it's a native buffer
                 this.src.readBytes(srcArray, 0, BLOCK_SIZE);
             } else {
                 this.src.skipBytes(BLOCK_SIZE);
+                srcArrayOffset += BLOCK_SIZE;
             }
 
-            this.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
-            srcArrayOffset += BLOCK_SIZE;
-            dstArrayOffset += BLOCK_SIZE;
+            super.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
 
             if (dstArray == globalBuffer)   {
                 //copy processed data out of array if it's a native buffer
-                this.dst.writeBytes(dstArray, BLOCK_SIZE, BLOCK_SIZE);
+                this.dst.writeBytes(dstArray, 0, BLOCK_SIZE);
             } else {
                 this.dst.writerIndex(this.dst.writerIndex() + BLOCK_SIZE);
+                dstArrayOffset += BLOCK_SIZE;
             }
         }
     }
 
     @Override
     public boolean flush() {
+        this._assertConfigured();
         return true;
     }
 
     @Override
-    public void finish() throws IllegalArgumentException {
-    }
+    public boolean finish() throws IllegalArgumentException {
+        this._assertConfigured();
 
-    @Override
-    public boolean finished() {
-        return false;
+        this.process();
+
+        if (this.src.isReadable()) {
+            return false;
+        } else {
+            return this.finished = true;
+        }
     }
 
     @Override
@@ -135,11 +167,6 @@ public final class BouncyCastleAES extends AESEngine implements BouncyCastleBloc
 
     @Override
     public int blockSize() {
-        return BLOCK_SIZE;
-    }
-
-    @Override
-    public int ivSize() {
         return BLOCK_SIZE;
     }
 

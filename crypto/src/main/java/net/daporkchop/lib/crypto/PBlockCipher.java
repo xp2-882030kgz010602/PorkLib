@@ -13,34 +13,26 @@
  *
  */
 
-package crypto;
-
-import io.netty.buffer.Unpooled;
-import net.daporkchop.lib.crypto.PCipher;
-import net.daporkchop.lib.crypto.bc.block.BouncyCastleAES;
-import net.daporkchop.lib.encoding.Hexadecimal;
-import org.junit.Test;
+package net.daporkchop.lib.crypto;
 
 /**
+ * An extension of {@link PCipher} that provides symmetric encryption of data in fixed-size blocks.
+ *
  * @author DaPorkchop_
  */
-public class CryptoTest {
-    @Test
-    public void test()  {
-        PCipher cipher = new BouncyCastleAES();
-        cipher.init(true, Unpooled.wrappedBuffer(new byte[cipher.bestKeySize()]));
+public interface PBlockCipher extends PCipher {
+    /**
+     * Processes a single block.
+     * <p>
+     * This will read, process and write exactly one block, failing if the source buffer does not have enough data readable or
+     * the destination buffer does not have enough space available.
+     *
+     * @throws IllegalArgumentException if the source buffer does not have enough data readable or the destination buffer does not have enough space available
+     */
+    void processBlock() throws IllegalArgumentException;
 
-        byte[] src = new byte[cipher.blockSize() * 4];
-        byte[] dst = new byte[src.length];
-
-        cipher.src(Unpooled.wrappedBuffer(src));
-        cipher.dst(Unpooled.wrappedBuffer(dst).clear());
-
-        if (!cipher.finish()) {
-            throw new IllegalStateException();
-        }
-
-        System.out.println(Hexadecimal.encode(src));
-        System.out.println(Hexadecimal.encode(dst));
+    @Override
+    default boolean usesBlocks() {
+        return true;
     }
 }

@@ -29,10 +29,13 @@ import net.daporkchop.lib.unsafe.capability.Releasable;
  * @author DaPorkchop_
  */
 public interface PCipher extends Releasable {
+    //TODO: make IV configuration be a separate group of methods
     /**
      * Initializes this cipher with the given key.
      * <p>
      * Warning: If this cipher uses an IV, a default IV of 0 will be used!
+     *
+     * This will reset src and dst buffers to {@code null}, so they will have to be set again after initialization.
      *
      * @param encrypt whether to initialize this cipher for encrypt mode (if {@code false}, it will be initialized in decrypt mode)
      * @param key     the key to use. The number of readable bytes must be exactly one of the key sizes supported by this cipher!
@@ -44,6 +47,8 @@ public interface PCipher extends Releasable {
      * Initializes this cipher with the given key and IV.
      * <p>
      * If this cipher does not use an IV, an {@link UnsupportedOperationException} will be thrown.
+     *
+     * This will reset src and dst buffers to {@code null}, so they will have to be set again after initialization.
      *
      * @param encrypt whether to initialize this cipher for encrypt mode (if {@code false}, it will be initialized in decrypt mode)
      * @param key     the key to use. The number of readable bytes must be exactly one of the key sizes supported by this cipher!
@@ -61,11 +66,21 @@ public interface PCipher extends Releasable {
     void src(@NonNull ByteBuf src);
 
     /**
+     * @return the currently configured source buffer
+     */
+    ByteBuf src();
+
+    /**
      * Sets the {@link ByteBuf} to write processed data to.
      *
      * @param dst the new destination {@link ByteBuf}
      */
     void dst(@NonNull ByteBuf dst);
+
+    /**
+     * @return the currently configured destination buffer
+     */
+    ByteBuf dst();
 
     /**
      * Processes all of the given source data, start to finish and writes it to the given destination buffer.
@@ -124,9 +139,10 @@ public interface PCipher extends Releasable {
      * buffer is full. In such a case the destination buffer should be reconfigured with more writable space and this method
      * called again.
      *
+     * @return whether or not the cipher was finished ({@link #finished()} will now return {@code true})
      * @throws IllegalArgumentException if this cipher only accepts data in blocks, and there is an amount of data remaining in the source buffer that is not a multiple of {@link #blockSize()}
      */
-    void finish() throws IllegalArgumentException;
+    boolean finish() throws IllegalArgumentException;
 
     /**
      * @return whether or not data processing has been finished
@@ -161,7 +177,11 @@ public interface PCipher extends Releasable {
     int blockSize();
 
     /**
-     * @return whether or not this cipher only processes data in blocks
+     * Checks whether or not this cipher processes data in blocks.
+     * <p>
+     * If this method returns {@code true}, it is guaranteed to also be an instance of {@link PBlockCipher}.
+     *
+     * @return whether or not this cipher processes data in blocks
      */
     default boolean usesBlocks() {
         return this.blockSize() != -1;
@@ -170,8 +190,8 @@ public interface PCipher extends Releasable {
     /**
      * @return the required size of an IV for this cipher, or {@code -1} if this cipher does not use an IV
      */
-    default int ivSize()    {
-        return this.blockSize();
+    default int ivSize() {
+        return -1;
     }
 
     /**
@@ -212,5 +232,19 @@ public interface PCipher extends Releasable {
             }
         }
         return false;
+    }
+
+    //
+    //
+    // internal methods
+    //
+    //
+
+    default void _assertConfigured()    {
+        if (this.src() == null || this.dst() == null)   {
+            throw new IllegalStateException("src and dst buffers must be set!");
+        } else if (this.finished()) {
+            throw new IllegalStateException("Already finished!");
+        }
     }
 }
