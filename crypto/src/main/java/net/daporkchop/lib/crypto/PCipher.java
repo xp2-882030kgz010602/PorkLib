@@ -1,7 +1,7 @@
 /*
  * Adapted from the Wizardry License
  *
- * Copyright (c) 2018-2019 DaPorkchop_ and contributors
+ * Copyright (c) 2018-2020 DaPorkchop_ and contributors
  *
  * Permission is hereby granted to any persons and/or organizations using this software to copy, modify, merge, publish, and distribute it. Said persons and/or organizations are not allowed to use the software or any derivatives of the work for commercial use or any other means to generate income, nor are they allowed to claim this software as their own.
  *
@@ -34,7 +34,7 @@ public interface PCipher extends Releasable {
      * Initializes this cipher with the given key.
      * <p>
      * Warning: If this cipher uses an IV, a default IV of 0 will be used!
-     *
+     * <p>
      * This will reset src and dst buffers to {@code null}, so they will have to be set again after initialization.
      *
      * @param encrypt whether to initialize this cipher for encrypt mode (if {@code false}, it will be initialized in decrypt mode)
@@ -47,7 +47,7 @@ public interface PCipher extends Releasable {
      * Initializes this cipher with the given key and IV.
      * <p>
      * If this cipher does not use an IV, an {@link UnsupportedOperationException} will be thrown.
-     *
+     * <p>
      * This will reset src and dst buffers to {@code null}, so they will have to be set again after initialization.
      *
      * @param encrypt whether to initialize this cipher for encrypt mode (if {@code false}, it will be initialized in decrypt mode)
@@ -234,14 +234,23 @@ public interface PCipher extends Releasable {
         return false;
     }
 
+    /**
+     * Checks whether or not this {@link PCipher} uses direct memory internally.
+     * <p>
+     * Using the same kind of buffer that this {@link PCipher} uses internally can provide significant speedups.
+     *
+     * @return whether or not this {@link PCipher} uses direct memory internally
+     */
+    boolean direct();
+
     //
     //
     // internal methods
     //
     //
 
-    default void _assertConfigured()    {
-        if (this.src() == null || this.dst() == null)   {
+    default void _assertConfigured() {
+        if (this.src() == null || this.dst() == null) {
             throw new IllegalStateException("src and dst buffers must be set!");
         } else if (this.finished()) {
             throw new IllegalStateException("Already finished!");
