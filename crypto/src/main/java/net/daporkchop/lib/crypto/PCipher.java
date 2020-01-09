@@ -59,30 +59,6 @@ public interface PCipher extends Releasable {
     void init(boolean encrypt, @NonNull ByteBuf key, @NonNull ByteBuf iv) throws UnsupportedOperationException;
 
     /**
-     * Sets the {@link ByteBuf} to read data from.
-     *
-     * @param src the new source {@link ByteBuf}
-     */
-    void src(@NonNull ByteBuf src);
-
-    /**
-     * @return the currently configured source buffer
-     */
-    ByteBuf src();
-
-    /**
-     * Sets the {@link ByteBuf} to write processed data to.
-     *
-     * @param dst the new destination {@link ByteBuf}
-     */
-    void dst(@NonNull ByteBuf dst);
-
-    /**
-     * @return the currently configured destination buffer
-     */
-    ByteBuf dst();
-
-    /**
      * Processes all of the given source data, start to finish and writes it to the given destination buffer.
      *
      * @param src the {@link ByteBuf} to read data from
@@ -92,12 +68,15 @@ public interface PCipher extends Releasable {
         if (!src.isReadable()) return;
         dst.ensureWritable(src.readableBytes());
 
-        this.src(src);
-        this.dst(dst);
-
         do {
-            this.finish();
-        } while (!this.finished() && dst.ensureWritable(8192).isWritable());
+            this.process(src, dst);
+        } while (src.isReadable() && dst.ensureWritable(8192).isWritable());
+
+        if (this.hasBuffer() && this.bufferedCount() > 0) {
+            do {
+                this.flush(dst);
+            } while (this.bufferedCount() > 0 && dst.ensureWritable(8192).isWritable());
+        }
     }
 
     /**
@@ -109,45 +88,26 @@ public interface PCipher extends Releasable {
      * Note that more data may be read than the amount written, in case this cipher internally buffers data and
      * does not have enough source data or destination space available.
      *
+     * @param src the {@link ByteBuf} to read data from
+     * @param dst the {@link ByteBuf} to write processed data to
      * @throws IllegalArgumentException if this cipher only accepts data in blocks, and there is an amount of data remaining in the source buffer that is not a multiple of {@link #blockSize()}
      */
-    void process() throws IllegalArgumentException;
+    void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) throws IllegalArgumentException;
 
     /**
      * Attempts to flush this cipher's internal buffer, possibly applying some kind of padding to the buffered data.
      * <p>
-     * This will not read any data, and will write data until the internal buffer has been flushed or the destination buffer
-     * is filled.
+     * This will write data until the internal buffer has been flushed or the destination buffer is filled.
      * <p>
      * If this cipher does not have an internal buffer ({@link #hasBuffer()} is {@code false}), this method will do nothing
      * and will always return {@code true}.
-     */
-    boolean flush();
-
-    /**
-     * Attempts to finish processing the data.
      * <p>
-     * This will read, process and write data until the source buffer is emptied, do any final processing to the data (if required),
-     * and write the final data to the destination buffer until the processing process is finished.
-     * <p>
-     * Changing the source buffer between invocations of this method will result in undefined behavior until the cipher is
-     * freshly initialized.
-     * <p>
-     * Calling {@link #process()} after this method will result in undefined behavior until the cipher is freshly initialized.
-     * <p>
-     * The value of {@link #finished()} may not be set to {@code true} after calling this method in the event that the destination
-     * buffer is full. In such a case the destination buffer should be reconfigured with more writable space and this method
-     * called again.
+     * If this cipher has an internal buffer, but the buffer is empty, this method will return {@code true}.
      *
-     * @return whether or not the cipher was finished ({@link #finished()} will now return {@code true})
-     * @throws IllegalArgumentException if this cipher only accepts data in blocks, and there is an amount of data remaining in the source buffer that is not a multiple of {@link #blockSize()}
+     * @param dst the {@link ByteBuf} to write processed data to
+     * @return whether or not the flush operation could be completed (if {@code false}, the destination buffer is too small)
      */
-    boolean finish() throws IllegalArgumentException;
-
-    /**
-     * @return whether or not data processing has been finished
-     */
-    boolean finished();
+    boolean flush(@NonNull ByteBuf dst);
 
     //
     //
@@ -170,6 +130,11 @@ public interface PCipher extends Releasable {
      * @return whether or not this cipher internally buffers data
      */
     boolean hasBuffer();
+
+    /**
+     * @return the number of currently buffered bytes (always {@code 0} if this cipher does not have a buffer)
+     */
+    int bufferedCount();
 
     /**
      * @return the block size for this cipher, or {@code -1} if this cipher does not process data in blocks
@@ -242,18 +207,4 @@ public interface PCipher extends Releasable {
      * @return whether or not this {@link PCipher} uses direct memory internally
      */
     boolean direct();
-
-    //
-    //
-    // internal methods
-    //
-    //
-
-    default void _assertConfigured() {
-        if (this.src() == null || this.dst() == null) {
-            throw new IllegalStateException("src and dst buffers must be set!");
-        } else if (this.finished()) {
-            throw new IllegalStateException("Already finished!");
-        }
-    }
 }

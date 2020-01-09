@@ -1,7 +1,7 @@
 /*
  * Adapted from the Wizardry License
  *
- * Copyright (c) 2018-2019 DaPorkchop_ and contributors
+ * Copyright (c) 2018-2020 DaPorkchop_ and contributors
  *
  * Permission is hereby granted to any persons and/or organizations using this software to copy, modify, merge, publish, and distribute it. Said persons and/or organizations are not allowed to use the software or any derivatives of the work for commercial use or any other means to generate income, nor are they allowed to claim this software as their own.
  *
@@ -15,6 +15,9 @@
 
 package net.daporkchop.lib.crypto;
 
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
+
 /**
  * An extension of {@link PCipher} that provides symmetric encryption of data in fixed-size blocks.
  *
@@ -27,9 +30,11 @@ public interface PBlockCipher extends PCipher {
      * This will read, process and write exactly one block, failing if the source buffer does not have enough data readable or
      * the destination buffer does not have enough space available.
      *
+     * @param src the {@link ByteBuf} to read the block from
+     * @param dst the {@link ByteBuf} to write the processed block to
      * @throws IllegalArgumentException if the source buffer does not have enough data readable or the destination buffer does not have enough space available
      */
-    void processBlock() throws IllegalArgumentException;
+    void processBlock(@NonNull ByteBuf src, @NonNull ByteBuf dst) throws IllegalArgumentException;
 
     @Override
     default boolean usesBlocks() {

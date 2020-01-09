@@ -36,57 +36,98 @@ public final class PPaddedBlockCipher implements PCipher {
     protected final PBlockCipherPadding padding;
     protected final ByteBuf buffer;
 
-    public PPaddedBlockCipher(@NonNull PBlockCipher cipher, @NonNull PBlockCipherPadding padding)   {
+    @Getter
+    protected final int blockSize;
+
+    @Getter
+    protected final boolean direct;
+
+    public PPaddedBlockCipher(@NonNull PBlockCipher cipher, @NonNull PBlockCipherPadding padding) {
         this.cipher = cipher;
         this.padding = padding;
 
-        int blockSize = this.blockSize();
-        this.buffer = cipher.direct() ? Unpooled.directBuffer(blockSize, blockSize) : Unpooled.buffer(blockSize, blockSize);
+        this.blockSize = this.cipher.blockSize();
+        this.direct = cipher.direct();
+
+        this.buffer = this.direct
+                ? Unpooled.directBuffer(this.blockSize, this.blockSize)
+                : Unpooled.buffer(this.blockSize, this.blockSize);
     }
 
     @Override
     public void init(boolean encrypt, @NonNull ByteBuf key) {
+        this.cipher.init(encrypt, key);
     }
 
     @Override
     public void init(boolean encrypt, @NonNull ByteBuf key, @NonNull ByteBuf iv) throws UnsupportedOperationException {
+        this.cipher.init(encrypt, key, iv);
     }
 
     @Override
-    public void src(@NonNull ByteBuf src) {
+    public void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
+        if (dst.writableBytes() < this.blockSize) {
+            //don't bother doing anything if there isn't enough space for a block
+            return;
+        }
+
+        if (this.buffer.writerIndex() != 0) {
+            //there is data in the buffer, attempt to fill up rest of buffer
+            int toRead = this.blockSize - this.buffer.writerIndex();
+            if (toRead > 0) {
+                //copy data from source into buffer
+                this.buffer.writeBytes(src, toRead);
+            }
+
+            if (this.buffer.writerIndex() != this.blockSize)    {
+                //there wasn't enough data in the source to fill up the buffer, and we won't apply padding because
+                // a flush wasn't requested
+                return;
+            }
+
+            this.drainBuffer(dst);
+        }
+
+        while (src.readableBytes() >= this.blockSize && dst.writableBytes() >= this.blockSize)   {
+            //encrypt whole blocks directly from the source buffer as long as possible
+            this.cipher.processBlock(src, dst);
+        }
+
+        if (dst.writableBytes() < this.blockSize && src.isReadable())   {
+            //buffer any remaining data after destination buffer fills up
+            this.buffer.writeBytes(src);
+        }
     }
 
     @Override
-    public ByteBuf src() {
-        return null;
+    public boolean flush(@NonNull ByteBuf dst) {
+        if (this.buffer.writerIndex() != 0) {
+            //there is data in the buffer, attempt to flush
+            if (dst.writableBytes() < this.blockSize) {
+                //don't bother flushing if there isn't enough space for a block
+                return false;
+            }
+
+            if (this.buffer.writerIndex() != this.blockSize) {
+                //apply padding to buffered block if needed
+                this.padding.pad(this.buffer, this.blockSize - this.buffer.writerIndex());
+            }
+
+            this.drainBuffer(dst);
+            return true;
+        } else {
+            //the buffer is already empty, nothing needs to be done
+            return true;
+        }
     }
 
-    @Override
-    public void dst(@NonNull ByteBuf dst) {
-    }
+    private void drainBuffer(@NonNull ByteBuf dst) {
+        if (this.buffer.writerIndex() != this.blockSize) {
+            throw new IllegalStateException("Buffer is not full!");
+        }
 
-    @Override
-    public ByteBuf dst() {
-        return null;
-    }
-
-    @Override
-    public void process() throws IllegalArgumentException {
-    }
-
-    @Override
-    public boolean flush() {
-        return false;
-    }
-
-    @Override
-    public boolean finish() throws IllegalArgumentException {
-        return false;
-    }
-
-    @Override
-    public boolean finished() {
-        return false;
+        this.cipher.processBlock(this.buffer, dst);
+        this.buffer.clear();
     }
 
     @Override
@@ -100,8 +141,23 @@ public final class PPaddedBlockCipher implements PCipher {
     }
 
     @Override
-    public int blockSize() {
-        return this.cipher.blockSize();
+    public int bufferedCount() {
+        return this.buffer.writerIndex();
+    }
+
+    @Override
+    public boolean usesBlocks() {
+        return false;
+    }
+
+    @Override
+    public int ivSize() {
+        return this.cipher.ivSize();
+    }
+
+    @Override
+    public boolean ivRequired() {
+        return this.cipher.ivRequired();
     }
 
     @Override
@@ -110,17 +166,23 @@ public final class PPaddedBlockCipher implements PCipher {
     }
 
     @Override
-    public boolean direct() {
-        return this.cipher.direct();
+    public int bestKeySize() {
+        return this.cipher.bestKeySize();
+    }
+
+    @Override
+    public boolean keySizeSupported(int size) {
+        return this.cipher.keySizeSupported(size);
     }
 
     @Override
     public void release() throws AlreadyReleasedException {
-        if (this.buffer.refCnt() == 0)  {
+        if (this.buffer.refCnt() == 0) {
             throw new AlreadyReleasedException();
-        } else {
-            this.buffer.release();
+        } else if (this.buffer.release()) {
             this.cipher.release();
+        } else {
+            throw new IllegalStateException();
         }
     }
 }

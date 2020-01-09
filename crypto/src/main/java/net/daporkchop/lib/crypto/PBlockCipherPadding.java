@@ -30,11 +30,10 @@ public interface PBlockCipherPadding {
     String name();
 
     /**
-     * Applies this padding to the given range in the given {@link ByteBuf}.
+     * Applies this padding to the given {@link ByteBuf}.
      *
-     * @param buf  the {@link ByteBuf} to pad
-     * @param from the index to start padding at (inclusive)
-     * @param to   the index to finish padding at (exclusive)
+     * @param buf   the {@link ByteBuf} to pad
+     * @param count the number of bytes of padding to apply
      */
-    void pad(@NonNull ByteBuf buf, int from, int to);
+    void pad(@NonNull ByteBuf buf, int count);
 }
