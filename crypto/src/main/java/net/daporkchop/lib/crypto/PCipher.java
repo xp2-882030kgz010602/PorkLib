@@ -60,6 +60,8 @@ public interface PCipher extends Releasable {
 
     /**
      * Processes all of the given source data, start to finish and writes it to the given destination buffer.
+     * <p>
+     * This may cause the destination buffer to be expanded indefinitely. Use with caution!
      *
      * @param src the {@link ByteBuf} to read data from
      * @param dst the {@link ByteBuf} to write processed data to

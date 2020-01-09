@@ -1,7 +1,7 @@
 /*
  * Adapted from the Wizardry License
  *
- * Copyright (c) 2018-2019 DaPorkchop_ and contributors
+ * Copyright (c) 2018-2020 DaPorkchop_ and contributors
  *
  * Permission is hereby granted to any persons and/or organizations using this software to copy, modify, merge, publish, and distribute it. Said persons and/or organizations are not allowed to use the software or any derivatives of the work for commercial use or any other means to generate income, nor are they allowed to claim this software as their own.
  *
@@ -17,7 +17,10 @@ package crypto;
 
 import io.netty.buffer.Unpooled;
 import net.daporkchop.lib.crypto.PCipher;
+import net.daporkchop.lib.crypto.PPaddedBlockCipher;
 import net.daporkchop.lib.crypto.bc.block.BouncyCastleAES;
+import net.daporkchop.lib.crypto.generic.block.padding.PKCS7Padding;
+import net.daporkchop.lib.crypto.generic.block.padding.ZeroBytePadding;
 import net.daporkchop.lib.encoding.Hexadecimal;
 import org.junit.Test;
 
@@ -27,18 +30,15 @@ import org.junit.Test;
 public class CryptoTest {
     @Test
     public void test()  {
-        PCipher cipher = new BouncyCastleAES();
+        PCipher cipher = new PPaddedBlockCipher(new BouncyCastleAES(), new PKCS7Padding());
         cipher.init(true, Unpooled.wrappedBuffer(new byte[cipher.bestKeySize()]));
 
-        byte[] src = new byte[cipher.blockSize() * 4];
-        byte[] dst = new byte[src.length];
+        final int blocks = 4;
 
-        cipher.src(Unpooled.wrappedBuffer(src));
-        cipher.dst(Unpooled.wrappedBuffer(dst).clear());
+        byte[] src = new byte[cipher.blockSize() * blocks - 5];
+        byte[] dst = new byte[cipher.blockSize() * blocks];
 
-        if (!cipher.finish()) {
-            throw new IllegalStateException();
-        }
+        cipher.fullProcess(Unpooled.wrappedBuffer(src), Unpooled.wrappedBuffer(dst).clear());
 
         System.out.println(Hexadecimal.encode(src));
         System.out.println(Hexadecimal.encode(dst));

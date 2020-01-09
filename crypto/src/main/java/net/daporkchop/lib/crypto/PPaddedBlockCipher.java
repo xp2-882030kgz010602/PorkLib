@@ -93,7 +93,7 @@ public final class PPaddedBlockCipher implements PCipher {
             this.cipher.processBlock(src, dst);
         }
 
-        if (dst.writableBytes() < this.blockSize && src.isReadable())   {
+        if (src.isReadable())   {
             //buffer any remaining data after destination buffer fills up
             this.buffer.writeBytes(src);
         }
@@ -110,7 +110,7 @@ public final class PPaddedBlockCipher implements PCipher {
 
             if (this.buffer.writerIndex() != this.blockSize) {
                 //apply padding to buffered block if needed
-                this.padding.pad(this.buffer, this.blockSize - this.buffer.writerIndex());
+                this.padding.pad(this.buffer, this.blockSize - this.buffer.writerIndex(), this.blockSize);
             }
 
             this.drainBuffer(dst);
