@@ -69,60 +69,6 @@ public final class BouncyCastleAES extends AESEngine implements BouncyCastleBloc
     }
 
     @Override
-    public void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) throws IllegalArgumentException {
-        int srcReadable = src.readableBytes();
-        int dstWritable = dst.writableBytes();
-
-        if ((srcReadable & 0xF) != 0)    {
-            throw new IllegalArgumentException(String.format("AES requires data to be a multiple of %d bytes (readable: %d)", BLOCK_SIZE, srcReadable));
-        } else if (srcReadable == 0 || dstWritable < srcReadable)   {
-            return;
-        }
-
-        final byte[] globalBuffer = this.globalBuffer;
-
-        final byte[] srcArray;
-        int srcArrayOffset;
-        if (src.hasArray())    {
-            srcArray = src.array();
-            srcArrayOffset = src.arrayOffset() + src.readerIndex() - BLOCK_SIZE;
-        } else {
-            srcArray = globalBuffer;
-            srcArrayOffset = 0;
-        }
-
-        final byte[] dstArray;
-        int dstArrayOffset;
-        if (dst.hasArray())    {
-            dstArray = dst.array();
-            dstArrayOffset = dst.arrayOffset() + dst.arrayOffset();
-        } else {
-            dstArray = globalBuffer;
-            dstArrayOffset = 0;
-        }
-
-        for (int i = srcReadable / BLOCK_SIZE - 1; i >= 0 && srcReadable != 0 && dstWritable >= srcReadable; i--, srcReadable = src.readableBytes(), dstWritable = dst.writableBytes()) {
-            if (srcArray == globalBuffer)   {
-                //copy source data into array if it's a native buffer
-                src.readBytes(srcArray, 0, BLOCK_SIZE);
-            } else {
-                src.skipBytes(BLOCK_SIZE);
-                srcArrayOffset += BLOCK_SIZE;
-            }
-
-            super.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
-
-            if (dstArray == globalBuffer)   {
-                //copy processed data out of array if it's a native buffer
-                dst.writeBytes(dstArray, 0, BLOCK_SIZE);
-            } else {
-                dst.writerIndex(dst.writerIndex() + BLOCK_SIZE);
-                dstArrayOffset += BLOCK_SIZE;
-            }
-        }
-    }
-
-    @Override
     public boolean flush(@NonNull ByteBuf dst) {
         return true;
     }

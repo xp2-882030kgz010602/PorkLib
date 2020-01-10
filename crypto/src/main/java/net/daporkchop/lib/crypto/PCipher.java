@@ -17,6 +17,7 @@ package net.daporkchop.lib.crypto;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.lib.math.primitive.PMath;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
@@ -61,6 +62,8 @@ public interface PCipher extends Releasable {
     /**
      * Processes all of the given source data, start to finish and writes it to the given destination buffer.
      * <p>
+     * This will also flush the internal buffer, if this cipher has one.
+     * <p>
      * This may cause the destination buffer to be expanded indefinitely. Use with caution!
      *
      * @param src the {@link ByteBuf} to read data from
@@ -68,16 +71,16 @@ public interface PCipher extends Releasable {
      */
     default void fullProcess(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
         if (!src.isReadable()) return;
-        dst.ensureWritable(src.readableBytes());
+        dst.ensureWritable(this.roundUpToBlockSize(src.readableBytes() + this.bufferedCount()));
 
-        do {
-            this.process(src, dst);
-        } while (src.isReadable() && dst.ensureWritable(8192).isWritable());
+        this.process(src, dst);
 
-        if (this.hasBuffer() && this.bufferedCount() > 0) {
-            do {
-                this.flush(dst);
-            } while (this.bufferedCount() > 0 && dst.ensureWritable(8192).isWritable());
+        if (src.isReadable())   {
+            throw new IllegalStateException("Didn't read all source data!");
+        } else if (!dst.isWritable())   {
+            throw new IllegalStateException("Ran out of space for destination data!");
+        } else if (this.hasBuffer() && this.bufferedCount() > 0 && !this.flush(dst)) {
+            throw new IllegalStateException("Unable to flush buffer!");
         }
     }
 
@@ -152,6 +155,19 @@ public interface PCipher extends Releasable {
      */
     default boolean usesBlocks() {
         return this.blockSize() != -1;
+    }
+
+    /**
+     * Rounds the given value up to the next multiple of this cipher's block size.
+     * <p>
+     * If this cipher does not use blocks, it will always return the input value.
+     *
+     * @param value the value to start
+     * @return the value rounded up to the next multiple of this cipher's block size
+     */
+    default int roundUpToBlockSize(int value) {
+        int blockSize = this.blockSize();
+        return blockSize == -1 ? value : PMath.roundUp(blockSize, value);
     }
 
     /**
