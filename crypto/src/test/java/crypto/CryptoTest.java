@@ -16,6 +16,7 @@
 package crypto;
 
 import io.netty.buffer.Unpooled;
+import net.daporkchop.lib.crypto.PBufferedBlockCipher;
 import net.daporkchop.lib.crypto.PCipher;
 import net.daporkchop.lib.crypto.PPaddedBlockCipher;
 import net.daporkchop.lib.crypto.bc.block.BouncyCastleAES;
@@ -31,6 +32,7 @@ public class CryptoTest {
     @Test
     public void test()  {
         PCipher cipher = new PPaddedBlockCipher(new BouncyCastleAES(), new PKCS7Padding());
+        //cipher = new PBufferedBlockCipher(new BouncyCastleAES());
         cipher.init(true, Unpooled.wrappedBuffer(new byte[cipher.bestKeySize()]));
 
         final int blocks = 4;

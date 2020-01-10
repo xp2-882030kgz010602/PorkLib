@@ -16,184 +16,36 @@
 package net.daporkchop.lib.crypto;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
  * A wrapper around a {@link PBlockCipher} that applies cipher padding using a {@link PBlockCipherPadding}.
  *
  * @author DaPorkchop_
  */
-//TODO: impleemnt
-@RequiredArgsConstructor
 @Accessors(fluent = true)
-public final class PPaddedBlockCipher implements PCipher {
-    protected final PBlockCipher cipher;
+public final class PPaddedBlockCipher extends PBufferedBlockCipher {
     protected final PBlockCipherPadding padding;
-    protected final ByteBuf buffer;
-
-    @Getter
-    protected final int blockSize;
-
-    @Getter
-    protected final boolean direct;
 
     public PPaddedBlockCipher(@NonNull PBlockCipher cipher, @NonNull PBlockCipherPadding padding) {
-        this.cipher = cipher;
+        super(cipher);
+
         this.padding = padding;
-
-        this.blockSize = this.cipher.blockSize();
-        this.direct = cipher.direct();
-
-        this.buffer = this.direct
-                ? Unpooled.directBuffer(this.blockSize, this.blockSize)
-                : Unpooled.buffer(this.blockSize, this.blockSize);
     }
 
     @Override
-    public void init(boolean encrypt, @NonNull ByteBuf key) {
-        this.cipher.init(encrypt, key);
-    }
-
-    @Override
-    public void init(boolean encrypt, @NonNull ByteBuf key, @NonNull ByteBuf iv) throws UnsupportedOperationException {
-        this.cipher.init(encrypt, key, iv);
-    }
-
-    @Override
-    public void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) {
-        if (dst.writableBytes() < this.blockSize) {
-            //don't bother doing anything if there isn't enough space for a block
-            return;
-        }
-
-        if (this.buffer.writerIndex() != 0) {
-            //there is data in the buffer, attempt to fill up rest of buffer
-            int toRead = this.blockSize - this.buffer.writerIndex();
-            if (toRead > 0) {
-                //copy data from source into buffer
-                this.buffer.writeBytes(src, toRead);
-            }
-
-            if (this.buffer.writerIndex() != this.blockSize)    {
-                //there wasn't enough data in the source to fill up the buffer, and we won't apply padding because
-                // a flush wasn't requested
-                return;
-            }
-
-            this.drainBuffer(dst);
-        }
-
-        //number of complete blocks that can be transferred
-        int blocks = Math.min(src.readableBytes(), dst.writableBytes()) / this.blockSize;
-        if (blocks > 0)   {
-            //modify src writerIndex so that src.readableBytes() is a multiple of blockSize
-            int oldSrcWriterIndex = src.writerIndex();
-            src.writerIndex(src.readerIndex() + blocks * this.blockSize);
-            this.cipher.process(src, dst);
-            //restore src writerIndex
-            src.writerIndex(oldSrcWriterIndex);
-        }
-
-        while (src.readableBytes() >= this.blockSize && dst.writableBytes() >= this.blockSize)   {
-            //encrypt whole blocks directly from the source buffer as long as possible
-            this.cipher.processBlock(src, dst);
-        }
-
-        if (src.isReadable())   {
-            //buffer any remaining data after destination buffer fills up
-            this.buffer.writeBytes(src);
-        }
-    }
-
-    @Override
-    public boolean flush(@NonNull ByteBuf dst) {
-        if (this.buffer.writerIndex() != 0) {
-            //there is data in the buffer, attempt to flush
-            if (dst.writableBytes() < this.blockSize) {
-                //don't bother flushing if there isn't enough space for a block
-                return false;
-            }
-
-            if (this.buffer.writerIndex() != this.blockSize) {
-                //apply padding to buffered block if needed
-                this.padding.pad(this.buffer, this.blockSize - this.buffer.writerIndex(), this.blockSize);
-            }
-
-            this.drainBuffer(dst);
-            return true;
-        } else {
-            //the buffer is already empty, nothing needs to be done
-            return true;
-        }
-    }
-
-    private void drainBuffer(@NonNull ByteBuf dst) {
+    protected void drainBuffer(@NonNull ByteBuf dst) {
         if (this.buffer.writerIndex() != this.blockSize) {
-            throw new IllegalStateException("Buffer is not full!");
+            //apply padding to buffered block if needed
+            this.padding.pad(this.buffer, this.blockSize - this.buffer.writerIndex(), this.blockSize);
         }
 
-        this.cipher.processBlock(this.buffer, dst);
-        this.buffer.clear();
+        super.drainBuffer(dst);
     }
 
     @Override
     public String name() {
         return this.cipher.name() + "/" + this.padding.name();
-    }
-
-    @Override
-    public boolean hasBuffer() {
-        return true;
-    }
-
-    @Override
-    public int bufferedCount() {
-        return this.buffer.writerIndex();
-    }
-
-    @Override
-    public boolean usesBlocks() {
-        return false;
-    }
-
-    @Override
-    public int ivSize() {
-        return this.cipher.ivSize();
-    }
-
-    @Override
-    public boolean ivRequired() {
-        return this.cipher.ivRequired();
-    }
-
-    @Override
-    public int[] keySizes() {
-        return this.cipher.keySizes();
-    }
-
-    @Override
-    public int bestKeySize() {
-        return this.cipher.bestKeySize();
-    }
-
-    @Override
-    public boolean keySizeSupported(int size) {
-        return this.cipher.keySizeSupported(size);
-    }
-
-    @Override
-    public void release() throws AlreadyReleasedException {
-        if (this.buffer.refCnt() == 0) {
-            throw new AlreadyReleasedException();
-        } else if (this.buffer.release()) {
-            this.cipher.release();
-        } else {
-            throw new IllegalStateException();
-        }
     }
 }

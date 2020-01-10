@@ -77,8 +77,6 @@ public interface PCipher extends Releasable {
 
         if (src.isReadable())   {
             throw new IllegalStateException("Didn't read all source data!");
-        } else if (!dst.isWritable())   {
-            throw new IllegalStateException("Ran out of space for destination data!");
         } else if (this.hasBuffer() && this.bufferedCount() > 0 && !this.flush(dst)) {
             throw new IllegalStateException("Unable to flush buffer!");
         }
