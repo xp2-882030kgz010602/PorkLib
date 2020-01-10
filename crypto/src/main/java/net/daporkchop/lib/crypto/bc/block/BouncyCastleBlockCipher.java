@@ -18,11 +18,11 @@ package net.daporkchop.lib.crypto.bc.block;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.crypto.PBlockCipher;
-import net.daporkchop.lib.crypto.PCipher;
 import net.daporkchop.lib.crypto.bc.BouncyCastleCipher;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
 
 /**
  * Base interface for implementations of {@link PBlockCipher} based on a BouncyCastle block cipher.
@@ -31,6 +31,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
  */
 public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher, PBlockCipher {
     long KEYPARAMETER_KEY_OFFSET = PUnsafe.pork_getOffset(KeyParameter.class, "key");
+    long PARAMETERSWITHIV_IV_OFFSET = PUnsafe.pork_getOffset(ParametersWithIV.class, "iv");
 
     /**
      * @return a {@code byte[]} the same size as this cipher's block size, to be used as a temporary buffer when using direct buffers
@@ -49,9 +50,9 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
         int srcReadable = src.readableBytes();
         int dstWritable = dst.writableBytes();
 
-        if (srcReadable % blockSize != 0)    {
+        if (srcReadable % blockSize != 0) {
             throw new IllegalArgumentException(String.format("%s requires data to be a multiple of %d bytes (readable: %d)", this.name(), blockSize, srcReadable));
-        } else if (srcReadable == 0 || dstWritable < srcReadable)   {
+        } else if (srcReadable == 0 || dstWritable < srcReadable) {
             return;
         }
 
@@ -59,7 +60,7 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
 
         final byte[] srcArray;
         int srcArrayOffset;
-        if (src.hasArray())    {
+        if (src.hasArray()) {
             srcArray = src.array();
             srcArrayOffset = src.arrayOffset() + src.readerIndex() - blockSize;
         } else {
@@ -69,7 +70,7 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
 
         final byte[] dstArray;
         int dstArrayOffset;
-        if (dst.hasArray())    {
+        if (dst.hasArray()) {
             dstArray = dst.array();
             dstArrayOffset = dst.arrayOffset() + dst.arrayOffset();
         } else {
@@ -78,7 +79,7 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
         }
 
         for (int i = srcReadable / blockSize - 1; i >= 0 && srcReadable != 0 && dstWritable >= srcReadable; i--, srcReadable = src.readableBytes(), dstWritable = dst.writableBytes()) {
-            if (srcArray == globalBuffer)   {
+            if (srcArray == globalBuffer) {
                 //copy source data into array if it's a native buffer
                 src.readBytes(srcArray, 0, blockSize);
             } else {
@@ -88,7 +89,7 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
 
             this.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
 
-            if (dstArray == globalBuffer)   {
+            if (dstArray == globalBuffer) {
                 //copy processed data out of array if it's a native buffer
                 dst.writeBytes(dstArray, 0, blockSize);
             } else {
@@ -130,7 +131,7 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
 
         this.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
 
-        if (dstArray == globalBuffer)   {
+        if (dstArray == globalBuffer) {
             dst.writeBytes(dstArray, 0, blockSize);
         } else {
             dst.writerIndex(dst.writerIndex() + blockSize);

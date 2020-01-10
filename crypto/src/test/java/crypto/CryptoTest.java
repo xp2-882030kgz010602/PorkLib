@@ -20,6 +20,7 @@ import net.daporkchop.lib.crypto.PBufferedBlockCipher;
 import net.daporkchop.lib.crypto.PCipher;
 import net.daporkchop.lib.crypto.PPaddedBlockCipher;
 import net.daporkchop.lib.crypto.bc.block.BouncyCastleAES;
+import net.daporkchop.lib.crypto.bc.block.mode.BouncyCastleModeCTR;
 import net.daporkchop.lib.crypto.generic.block.padding.PKCS7Padding;
 import net.daporkchop.lib.crypto.generic.block.padding.ZeroBytePadding;
 import net.daporkchop.lib.encoding.Hexadecimal;
@@ -31,15 +32,26 @@ import org.junit.Test;
 public class CryptoTest {
     @Test
     public void test()  {
-        PCipher cipher = new PPaddedBlockCipher(new BouncyCastleAES(), new PKCS7Padding());
+        PCipher cipher = new PPaddedBlockCipher(new BouncyCastleModeCTR(new BouncyCastleAES()), new PKCS7Padding());
         //cipher = new PBufferedBlockCipher(new BouncyCastleAES());
-        cipher.init(true, Unpooled.wrappedBuffer(new byte[cipher.bestKeySize()]));
+
+        System.out.println(cipher.name());
 
         final int blocks = 4;
 
         byte[] src = new byte[cipher.blockSize() * blocks - 5];
         byte[] dst = new byte[cipher.blockSize() * blocks];
 
+        cipher.init(true, Unpooled.wrappedBuffer(new byte[cipher.bestKeySize()]));
+        cipher.fullProcess(Unpooled.wrappedBuffer(src), Unpooled.wrappedBuffer(dst).clear());
+
+        System.out.println(Hexadecimal.encode(src));
+        System.out.println(Hexadecimal.encode(dst));
+        System.out.println();
+
+        src = dst;
+        dst = new byte[src.length];
+        cipher.init(false, Unpooled.wrappedBuffer(new byte[cipher.bestKeySize()]));
         cipher.fullProcess(Unpooled.wrappedBuffer(src), Unpooled.wrappedBuffer(dst).clear());
 
         System.out.println(Hexadecimal.encode(src));

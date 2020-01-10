@@ -36,7 +36,7 @@ public final class PPaddedBlockCipher extends PBufferedBlockCipher {
 
     @Override
     protected void drainBuffer(@NonNull ByteBuf dst) {
-        if (this.buffer.writerIndex() != this.blockSize) {
+        if (this.encrypt && this.buffer.writerIndex() != this.blockSize) {
             //apply padding to buffered block if needed
             this.padding.pad(this.buffer, this.blockSize - this.buffer.writerIndex(), this.blockSize);
         }

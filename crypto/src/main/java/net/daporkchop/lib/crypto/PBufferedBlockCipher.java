@@ -36,9 +36,10 @@ public class PBufferedBlockCipher implements PCipher {
 
     @Getter
     protected final int blockSize;
-
     @Getter
     protected final boolean direct;
+
+    protected boolean encrypt;
 
     public PBufferedBlockCipher(@NonNull PBlockCipher cipher) {
         this.cipher = cipher;
@@ -54,11 +55,15 @@ public class PBufferedBlockCipher implements PCipher {
     @Override
     public void init(boolean encrypt, @NonNull ByteBuf key) {
         this.cipher.init(encrypt, key);
+
+        this.encrypt = encrypt;
     }
 
     @Override
     public void init(boolean encrypt, @NonNull ByteBuf key, @NonNull ByteBuf iv) throws UnsupportedOperationException {
         this.cipher.init(encrypt, key, iv);
+
+        this.encrypt = encrypt;
     }
 
     @Override
