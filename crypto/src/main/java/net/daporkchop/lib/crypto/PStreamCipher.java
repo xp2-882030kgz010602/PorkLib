@@ -13,30 +13,24 @@
  *
  */
 
-package net.daporkchop.lib.crypto.bc;
+package net.daporkchop.lib.crypto;
 
-import net.daporkchop.lib.crypto.PCipher;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 
 /**
- * Base interface for implementations of {@link PCipher} based on the BouncyCastle APIs.
+ * An extension of {@link PCipher} that provides symmetric encryption of data in fixed-size blocks.
  *
  * @author DaPorkchop_
  */
-public interface BouncyCastleCipher extends PCipher {
+public interface PStreamCipher extends PCipher {
     /**
-     * @return a {@code byte[]} to be used as a temporary buffer when using direct buffers
+     * Processes the given data.
+     * <p>
+     * This will read, process and write data until either the source buffer is empty or the destination buffer is full.
+     *
+     * @param src the {@link ByteBuf} to read data from
+     * @param dst the {@link ByteBuf} to write data to
      */
-    byte[] globalBuffer();
-
-    @Override
-    default boolean direct() {
-        //everything bouncycastle is heap-only
-        return false;
-    }
-
-    @Override
-    default void release() throws AlreadyReleasedException {
-        //no-op
-    }
+    void processStreaming(@NonNull ByteBuf src, @NonNull ByteBuf dst);
 }

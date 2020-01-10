@@ -36,6 +36,7 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
     /**
      * @return a {@code byte[]} the same size as this cipher's block size, to be used as a temporary buffer when using direct buffers
      */
+    @Override
     byte[] globalBuffer();
 
     @Override
