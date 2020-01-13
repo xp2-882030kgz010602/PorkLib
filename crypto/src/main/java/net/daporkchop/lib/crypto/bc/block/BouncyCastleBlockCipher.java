@@ -24,6 +24,8 @@ import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 
+import static java.lang.Math.*;
+
 /**
  * Base interface for implementations of {@link PBlockCipher} based on a BouncyCastle block cipher.
  *
@@ -53,50 +55,11 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
 
         if (srcReadable % blockSize != 0) {
             throw new IllegalArgumentException(String.format("%s requires data to be a multiple of %d bytes (readable: %d)", this.name(), blockSize, srcReadable));
-        } else if (srcReadable == 0 || dstWritable < srcReadable) {
-            return;
         }
 
-        final byte[] globalBuffer = this.globalBuffer();
-
-        final byte[] srcArray;
-        int srcArrayOffset;
-        if (src.hasArray()) {
-            srcArray = src.array();
-            srcArrayOffset = src.arrayOffset() + src.readerIndex() - blockSize;
-        } else {
-            srcArray = globalBuffer;
-            srcArrayOffset = 0;
-        }
-
-        final byte[] dstArray;
-        int dstArrayOffset;
-        if (dst.hasArray()) {
-            dstArray = dst.array();
-            dstArrayOffset = dst.arrayOffset() + dst.arrayOffset();
-        } else {
-            dstArray = globalBuffer;
-            dstArrayOffset = 0;
-        }
-
-        for (int i = srcReadable / blockSize - 1; i >= 0 && srcReadable != 0 && dstWritable >= srcReadable; i--, srcReadable = src.readableBytes(), dstWritable = dst.writableBytes()) {
-            if (srcArray == globalBuffer) {
-                //copy source data into array if it's a native buffer
-                src.readBytes(srcArray, 0, blockSize);
-            } else {
-                src.skipBytes(blockSize);
-                srcArrayOffset += blockSize;
-            }
-
-            this.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
-
-            if (dstArray == globalBuffer) {
-                //copy processed data out of array if it's a native buffer
-                dst.writeBytes(dstArray, 0, blockSize);
-            } else {
-                dst.writerIndex(dst.writerIndex() + blockSize);
-                dstArrayOffset += blockSize;
-            }
+        int blocks = min(srcReadable, dstWritable) / blockSize;
+        if (blocks > 0) {
+            this.processBlocks(src, dst, blocks);
         }
     }
 
@@ -115,9 +78,9 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
         if (src.hasArray()) {
             srcArray = src.array();
             srcArrayOffset = src.arrayOffset() + src.readerIndex();
-            src.skipBytes(blockSize);
         } else {
-            src.readBytes(srcArray = globalBuffer, srcArrayOffset = 0, blockSize);
+            srcArray = globalBuffer;
+            srcArrayOffset = 0;
         }
 
         byte[] dstArray;
@@ -136,6 +99,61 @@ public interface BouncyCastleBlockCipher extends BlockCipher, BouncyCastleCipher
             dst.writeBytes(dstArray, 0, blockSize);
         } else {
             dst.writerIndex(dst.writerIndex() + blockSize);
+        }
+    }
+
+    @Override
+    default void processBlocks(@NonNull ByteBuf src, @NonNull ByteBuf dst, int blocks) throws IllegalArgumentException {
+        final int blockSize = this.blockSize();
+
+        if (blocks < 0) {
+            throw new IllegalArgumentException(String.valueOf(blocks));
+        } else if (blocks == 0) {
+            return;
+        } else if (src.readableBytes() < blocks * blockSize || dst.writableBytes() < blocks * blockSize) {
+            throw new IllegalArgumentException(String.format("Must have at least %d bytes (for %d blocks @ %d bytes each) available in both src and dst buffers! (src: %d, dst: %d)", blocks * blockSize, blocks, blockSize, src.readableBytes(), dst.writableBytes()));
+        }
+
+        final byte[] globalBuffer = this.globalBuffer();
+
+        byte[] srcArray;
+        int srcArrayOffset;
+        if (src.hasArray()) {
+            srcArray = src.array();
+            srcArrayOffset = src.arrayOffset() + src.readerIndex();
+        } else {
+            srcArray = globalBuffer;
+            srcArrayOffset = 0;
+        }
+
+        byte[] dstArray;
+        int dstArrayOffset;
+        if (dst.hasArray()) {
+            dstArray = dst.array();
+            dstArrayOffset = dst.arrayOffset() + dst.writerIndex();
+        } else {
+            dstArray = globalBuffer;
+            dstArrayOffset = 0;
+        }
+
+        for (int i = 0; i < blocks; i++) {
+            if (srcArray == globalBuffer) {
+                src.readBytes(globalBuffer);
+            } else {
+                src.skipBytes(blockSize);
+            }
+
+            this.processBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
+
+            if (srcArray != globalBuffer) {
+                srcArrayOffset += blockSize;
+            }
+            if (dstArray == globalBuffer) {
+                dst.writeBytes(dstArray);
+            } else {
+                dst.writerIndex(dst.writerIndex() + blockSize);
+                dstArrayOffset += blockSize;
+            }
         }
     }
 }

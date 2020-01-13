@@ -19,8 +19,9 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.crypto.PStreamCipher;
 import net.daporkchop.lib.crypto.bc.BouncyCastleCipher;
-import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.StreamCipher;
+
+import static java.lang.Math.min;
 
 /**
  * Base interface for implementations of {@link PStreamCipher} based on a BouncyCastle stream cipher.
@@ -42,7 +43,7 @@ public interface BouncyCastleStreamCipher extends PStreamCipher, BouncyCastleCip
             return;
         }
 
-        int count = Math.min(srcReadable, dstWritable);
+        int count = min(srcReadable, dstWritable);
 
         final byte[] globalBuffer = this.globalBuffer();
 
@@ -66,12 +67,34 @@ public interface BouncyCastleStreamCipher extends PStreamCipher, BouncyCastleCip
             dstArrayOffset = 0;
         }
 
-        if (srcArray != globalBuffer && dstArray != globalBuffer)   {
+        if (srcArray != globalBuffer && dstArray != globalBuffer) {
             //both buffers are heap buffers, we can just pass them on to the cipher implementation
             this.processBytes(srcArray, srcArrayOffset, count, dstArray, dstArrayOffset);
         } else {
-            //TODO
-            throw new UnsupportedOperationException();
+            //either one of the buffers is not a heap buffer, just repeatedly process bytes in steps of up to the block size until completion
+            final int blockSize = globalBuffer.length;
+            while (count > 0) {
+                final int roundCount = min(blockSize, count);
+                count -= roundCount;
+
+                if (srcArray == globalBuffer) {
+                    src.readBytes(srcArray, 0, roundCount);
+                } else {
+                    src.skipBytes(roundCount);
+                }
+
+                this.processBytes(srcArray, srcArrayOffset, roundCount, dstArray, dstArrayOffset);
+
+                if (srcArray != globalBuffer) {
+                    srcArrayOffset += roundCount;
+                }
+                if (dstArray == globalBuffer) {
+                    dst.writeBytes(globalBuffer, 0, roundCount);
+                } else {
+                    dst.writerIndex(dst.writerIndex() + roundCount);
+                    dstArrayOffset += roundCount;
+                }
+            }
         }
     }
 }

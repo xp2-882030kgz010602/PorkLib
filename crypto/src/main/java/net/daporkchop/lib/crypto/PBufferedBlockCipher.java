@@ -91,14 +91,7 @@ public class PBufferedBlockCipher implements PCipher {
 
         //number of complete blocks that can be transferred
         int blocks = Math.min(src.readableBytes(), dst.writableBytes()) / this.blockSize;
-        if (blocks > 0) {
-            //modify src writerIndex so that src.readableBytes() is a multiple of blockSize
-            int oldSrcWriterIndex = src.writerIndex();
-            src.writerIndex(src.readerIndex() + blocks * this.blockSize);
-            this.cipher.process(src, dst);
-            //restore src writerIndex
-            src.writerIndex(oldSrcWriterIndex);
-        }
+        this.cipher.processBlocks(src, dst, blocks);
 
         while (src.readableBytes() >= this.blockSize && dst.writableBytes() >= this.blockSize) {
             //encrypt whole blocks directly from the source buffer as long as possible

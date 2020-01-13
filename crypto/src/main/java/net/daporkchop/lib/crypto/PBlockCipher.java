@@ -36,6 +36,19 @@ public interface PBlockCipher extends PCipher {
      */
     void processBlock(@NonNull ByteBuf src, @NonNull ByteBuf dst) throws IllegalArgumentException;
 
+    /**
+     * Processes a number of blocks.
+     * <p>
+     * This will read, process and write the given number of blocks, failing if the source buffer does not have enough data
+     * readable or the destination buffer does not have enough space available.
+     *
+     * @param src    the {@link ByteBuf} to read the block from
+     * @param dst    the {@link ByteBuf} to write the processed block to
+     * @param blocks the number of blocks to process
+     * @throws IllegalArgumentException if the source buffer does not have enough data readable or the destination buffer does not have enough space available
+     */
+    void processBlocks(@NonNull ByteBuf src, @NonNull ByteBuf dst, int blocks) throws IllegalArgumentException;
+
     @Override
     default boolean usesBlocks() {
         return true;
