@@ -13,7 +13,7 @@
  *
  */
 
-package net.daporkchop.lib.crypto;
+package net.daporkchop.lib.crypto.cipher;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;

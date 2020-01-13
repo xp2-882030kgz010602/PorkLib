@@ -17,7 +17,7 @@ package net.daporkchop.lib.crypto.generic.block.padding;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.lib.crypto.PBlockCipherPadding;
+import net.daporkchop.lib.crypto.cipher.block.PBlockCipherPadding;
 
 /**
  * Implements the {@code PKCS7} block cipher padding algorithm.

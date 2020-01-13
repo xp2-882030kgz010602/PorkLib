@@ -16,13 +16,11 @@
 package crypto;
 
 import io.netty.buffer.Unpooled;
-import net.daporkchop.lib.crypto.PBufferedBlockCipher;
-import net.daporkchop.lib.crypto.PCipher;
-import net.daporkchop.lib.crypto.PPaddedBlockCipher;
+import net.daporkchop.lib.crypto.cipher.PCipher;
+import net.daporkchop.lib.crypto.cipher.block.PPaddedBlockCipher;
 import net.daporkchop.lib.crypto.bc.block.BouncyCastleAES;
 import net.daporkchop.lib.crypto.bc.block.mode.BouncyCastleModeCTR;
 import net.daporkchop.lib.crypto.generic.block.padding.PKCS7Padding;
-import net.daporkchop.lib.crypto.generic.block.padding.ZeroBytePadding;
 import net.daporkchop.lib.encoding.Hexadecimal;
 import org.junit.Test;
 

@@ -17,8 +17,8 @@ package net.daporkchop.lib.crypto.bc.stream;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.lib.crypto.PStreamCipher;
-import net.daporkchop.lib.crypto.bc.BouncyCastleCipher;
+import net.daporkchop.lib.crypto.cipher.PStreamCipher;
+import net.daporkchop.lib.crypto.generic.ISimpleHeapCipher;
 import org.bouncycastle.crypto.StreamCipher;
 
 import static java.lang.Math.min;
@@ -28,7 +28,7 @@ import static java.lang.Math.min;
  *
  * @author DaPorkchop_
  */
-public interface BouncyCastleStreamCipher extends PStreamCipher, BouncyCastleCipher, StreamCipher {
+public interface BouncyCastleStreamCipher extends PStreamCipher, StreamCipher, ISimpleHeapCipher {
     @Override
     default String getAlgorithmName() {
         return this.name();
@@ -70,6 +70,8 @@ public interface BouncyCastleStreamCipher extends PStreamCipher, BouncyCastleCip
         if (srcArray != globalBuffer && dstArray != globalBuffer) {
             //both buffers are heap buffers, we can just pass them on to the cipher implementation
             this.processBytes(srcArray, srcArrayOffset, count, dstArray, dstArrayOffset);
+            src.skipBytes(count);
+            dst.writerIndex(dst.writerIndex() + count);
         } else {
             //either one of the buffers is not a heap buffer, just repeatedly process bytes in steps of up to the block size until completion
             final int blockSize = globalBuffer.length;

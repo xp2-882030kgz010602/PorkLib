@@ -13,10 +13,13 @@
  *
  */
 
-package net.daporkchop.lib.crypto;
+package net.daporkchop.lib.crypto.cipher.block;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.lib.crypto.cipher.PCipher;
+
+import static java.lang.Math.min;
 
 /**
  * An extension of {@link PCipher} that provides symmetric encryption of data in fixed-size blocks.
@@ -24,6 +27,23 @@ import lombok.NonNull;
  * @author DaPorkchop_
  */
 public interface PBlockCipher extends PCipher {
+    @Override
+    default void process(@NonNull ByteBuf src, @NonNull ByteBuf dst) throws IllegalArgumentException {
+        int blockSize = this.blockSize();
+
+        int srcReadable = src.readableBytes();
+        int dstWritable = dst.writableBytes();
+
+        if (srcReadable % blockSize != 0) {
+            throw new IllegalArgumentException(String.format("%s requires data to be a multiple of %d bytes (readable: %d)", this.name(), blockSize, srcReadable));
+        }
+
+        int blocks = min(srcReadable, dstWritable) / blockSize;
+        if (blocks > 0) {
+            this.processBlocks(src, dst, blocks);
+        }
+    }
+
     /**
      * Processes a single block.
      * <p>
@@ -53,4 +73,7 @@ public interface PBlockCipher extends PCipher {
     default boolean usesBlocks() {
         return true;
     }
+
+    @Override
+    int blockSize();
 }

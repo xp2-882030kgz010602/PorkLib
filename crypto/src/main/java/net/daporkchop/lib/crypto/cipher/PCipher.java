@@ -13,10 +13,11 @@
  *
  */
 
-package net.daporkchop.lib.crypto;
+package net.daporkchop.lib.crypto.cipher;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.lib.crypto.cipher.block.PBlockCipher;
 import net.daporkchop.lib.math.primitive.PMath;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 

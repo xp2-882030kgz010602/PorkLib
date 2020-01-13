@@ -13,27 +13,23 @@
  *
  */
 
-package net.daporkchop.lib.crypto.generic.block.padding;
-
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
-import net.daporkchop.lib.crypto.cipher.block.PBlockCipherPadding;
+package net.daporkchop.lib.crypto.cipher.block;
 
 /**
- * Implements the {@code ZeroBytePadding} block cipher padding algorithm.
+ * An extension of {@link PBlockCipher} that provides random access to blocks.
  *
  * @author DaPorkchop_
  */
-public final class ZeroBytePadding implements PBlockCipherPadding {
-    @Override
-    public String name() {
-        return "ZeroBytePadding";
-    }
+public interface PSeekableBlockCipher extends PBlockCipher {
+    /**
+     * @return the index of the current block (the block that will be processed next)
+     */
+    long currentBlock();
 
-    @Override
-    public void pad(@NonNull ByteBuf buf, int count, int blockSize) {
-        while (count-- > 0)   {
-            buf.writeByte(0);
-        }
-    }
+    /**
+     * Seeks to a given block index.
+     *
+     * @param block the new block index to seek to
+     */
+    void seekBlock(long block);
 }

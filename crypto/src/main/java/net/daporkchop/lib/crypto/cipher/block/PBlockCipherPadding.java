@@ -13,30 +13,28 @@
  *
  */
 
-package net.daporkchop.lib.crypto.bc;
+package net.daporkchop.lib.crypto.cipher.block;
 
-import net.daporkchop.lib.crypto.PCipher;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 
 /**
- * Base interface for implementations of {@link PCipher} based on the BouncyCastle APIs.
+ * A padding applied to a {@link PBlockCipher}.
  *
  * @author DaPorkchop_
  */
-public interface BouncyCastleCipher extends PCipher {
+public interface PBlockCipherPadding {
     /**
-     * @return a {@code byte[]} to be used as a temporary buffer when using direct buffers
+     * @return the name of this {@link PBlockCipherPadding} mode
      */
-    byte[] globalBuffer();
+    String name();
 
-    @Override
-    default boolean direct() {
-        //everything bouncycastle is heap-only
-        return false;
-    }
-
-    @Override
-    default void release() throws AlreadyReleasedException {
-        //no-op
-    }
+    /**
+     * Applies this padding to the given {@link ByteBuf}.
+     *
+     * @param buf       the {@link ByteBuf} to pad
+     * @param count     the number of bytes of padding to apply
+     * @param blockSize the size of a full block
+     */
+    void pad(@NonNull ByteBuf buf, int count, int blockSize);
 }

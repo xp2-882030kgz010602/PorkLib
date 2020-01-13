@@ -13,14 +13,14 @@
  *
  */
 
-package net.daporkchop.lib.crypto;
+package net.daporkchop.lib.crypto.cipher.block;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
+import net.daporkchop.lib.crypto.cipher.PCipher;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**

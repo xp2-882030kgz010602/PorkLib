@@ -13,27 +13,18 @@
  *
  */
 
-package net.daporkchop.lib.crypto.generic.block.padding;
+package net.daporkchop.lib.crypto.generic;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
-import net.daporkchop.lib.crypto.cipher.block.PBlockCipherPadding;
+import net.daporkchop.lib.crypto.cipher.PCipher;
 
 /**
- * Implements the {@code ZeroBytePadding} block cipher padding algorithm.
+ * A base implementation of a simple {@link PCipher} backed by heap memory.
  *
  * @author DaPorkchop_
  */
-public final class ZeroBytePadding implements PBlockCipherPadding {
-    @Override
-    public String name() {
-        return "ZeroBytePadding";
-    }
-
-    @Override
-    public void pad(@NonNull ByteBuf buf, int count, int blockSize) {
-        while (count-- > 0)   {
-            buf.writeByte(0);
-        }
-    }
+public interface ISimpleHeapCipher extends PCipher {
+    /**
+     * @return a {@code byte[]} the same size as this cipher's block size, to be used as a temporary buffer when using direct buffers
+     */
+    byte[] globalBuffer();
 }

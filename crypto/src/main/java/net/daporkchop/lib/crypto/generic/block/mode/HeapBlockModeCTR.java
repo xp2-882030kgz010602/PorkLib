@@ -13,28 +13,14 @@
  *
  */
 
-package net.daporkchop.lib.crypto;
+package net.daporkchop.lib.crypto.generic.block.mode;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+import net.daporkchop.lib.crypto.cipher.block.PBlockCipher;
+import net.daporkchop.lib.crypto.generic.block.ISimpleHeapBlockCipher;
 
 /**
- * A padding applied to a {@link PBlockCipher}.
- *
  * @author DaPorkchop_
  */
-public interface PBlockCipherPadding {
-    /**
-     * @return the name of this {@link PBlockCipherPadding} mode
-     */
-    String name();
-
-    /**
-     * Applies this padding to the given {@link ByteBuf}.
-     *
-     * @param buf       the {@link ByteBuf} to pad
-     * @param count     the number of bytes of padding to apply
-     * @param blockSize the size of a full block
-     */
-    void pad(@NonNull ByteBuf buf, int count, int blockSize);
+public final class HeapBlockModeCTR implements ISimpleHeapBlockCipher {
+    //TODO
 }
