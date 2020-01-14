@@ -19,7 +19,7 @@ import io.netty.buffer.Unpooled;
 import net.daporkchop.lib.crypto.cipher.PCipher;
 import net.daporkchop.lib.crypto.cipher.block.PPaddedBlockCipher;
 import net.daporkchop.lib.crypto.bc.block.BouncyCastleAES;
-import net.daporkchop.lib.crypto.bc.block.mode.BouncyCastleModeCTR;
+import net.daporkchop.lib.crypto.generic.block.mode.HeapBlockModeCTR;
 import net.daporkchop.lib.crypto.generic.block.padding.PKCS7Padding;
 import net.daporkchop.lib.encoding.Hexadecimal;
 import org.junit.Test;
@@ -30,7 +30,7 @@ import org.junit.Test;
 public class CryptoTest {
     @Test
     public void test()  {
-        PCipher cipher = new PPaddedBlockCipher(new BouncyCastleModeCTR(new BouncyCastleAES()), new PKCS7Padding());
+        PCipher cipher = new PPaddedBlockCipher(new HeapBlockModeCTR(new BouncyCastleAES()), new PKCS7Padding());
         //cipher = new PBufferedBlockCipher(new BouncyCastleAES());
 
         System.out.println(cipher.name());

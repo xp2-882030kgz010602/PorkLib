@@ -18,13 +18,33 @@ package net.daporkchop.lib.crypto.generic;
 import net.daporkchop.lib.crypto.cipher.PCipher;
 
 /**
- * A base implementation of a simple {@link PCipher} backed by heap memory.
+ * Base interface for cipher implementations that wrap another cipher.
  *
  * @author DaPorkchop_
  */
-public interface ISimpleHeapCipher extends PCipher {
+public interface IDelegatingCipher extends PCipher {
     /**
-     * @return a {@code byte[]} the same size as this cipher's block size, to be used as a temporary buffer when using direct buffers
+     * @return the {@link PCipher} that this {@link IDelegatingCipher} is wrapping
      */
-    byte[] globalBuffer();
+    PCipher delegate();
+
+    @Override
+    default int roundUpToBlockSize(int value) {
+        return this.delegate().roundUpToBlockSize(value);
+    }
+
+    @Override
+    default int[] keySizes() {
+        return this.delegate().keySizes();
+    }
+
+    @Override
+    default int bestKeySize() {
+        return this.delegate().bestKeySize();
+    }
+
+    @Override
+    default boolean keySizeSupported(int size) {
+        return this.delegate().keySizeSupported(size);
+    }
 }

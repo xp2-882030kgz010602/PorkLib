@@ -67,23 +67,8 @@ public final class BouncyCastleAES extends AESEngine implements BouncyCastleBloc
     }
 
     @Override
-    public boolean flush(@NonNull ByteBuf dst) {
-        return true;
-    }
-
-    @Override
     public String name() {
         return "AES";
-    }
-
-    @Override
-    public boolean hasBuffer() {
-        return false;
-    }
-
-    @Override
-    public int bufferedCount() {
-        return 0;
     }
 
     @Override

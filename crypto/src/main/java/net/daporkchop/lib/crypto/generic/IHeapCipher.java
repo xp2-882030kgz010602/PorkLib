@@ -13,31 +13,18 @@
  *
  */
 
-package net.daporkchop.lib.crypto.bc.block;
+package net.daporkchop.lib.crypto.generic;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
-import net.daporkchop.lib.crypto.cipher.block.PBlockCipher;
-import net.daporkchop.lib.crypto.generic.block.IHeapBlockCipher;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import org.bouncycastle.crypto.BlockCipher;
-import org.bouncycastle.crypto.params.KeyParameter;
+import net.daporkchop.lib.crypto.cipher.PCipher;
 
 /**
- * Base interface for implementations of {@link PBlockCipher} based on a BouncyCastle block cipher.
+ * A base implementation of a simple {@link PCipher} backed by heap memory.
  *
  * @author DaPorkchop_
  */
-public interface BouncyCastleBlockCipher extends BlockCipher, IHeapBlockCipher {
-    long KEYPARAMETER_KEY_OFFSET = PUnsafe.pork_getOffset(KeyParameter.class, "key");
-
-    @Override
-    default void init(boolean encrypt, @NonNull ByteBuf key, @NonNull ByteBuf iv) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException(this.name() + " cannot use an IV!");
-    }
-
-    @Override
-    default void processHeapBlock(@NonNull byte[] in, int inOff, @NonNull byte[] out, int outOff) {
-        this.processBlock(in, inOff, out, outOff);
-    }
+public interface IHeapCipher extends PCipher {
+    /**
+     * @return a {@code byte[]} the same size as this cipher's block size, to be used as a temporary buffer when using direct buffers
+     */
+    byte[] globalBuffer();
 }

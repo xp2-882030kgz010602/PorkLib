@@ -18,7 +18,7 @@ package net.daporkchop.lib.crypto.bc.stream;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.crypto.cipher.PStreamCipher;
-import net.daporkchop.lib.crypto.generic.ISimpleHeapCipher;
+import net.daporkchop.lib.crypto.generic.IHeapCipher;
 import org.bouncycastle.crypto.StreamCipher;
 
 import static java.lang.Math.min;
@@ -28,7 +28,7 @@ import static java.lang.Math.min;
  *
  * @author DaPorkchop_
  */
-public interface BouncyCastleStreamCipher extends PStreamCipher, StreamCipher, ISimpleHeapCipher {
+public interface BouncyCastleStreamCipher extends PStreamCipher, StreamCipher, IHeapCipher {
     @Override
     default String getAlgorithmName() {
         return this.name();

@@ -93,14 +93,9 @@ public class PBufferedBlockCipher implements PCipher {
         int blocks = Math.min(src.readableBytes(), dst.writableBytes()) / this.blockSize;
         this.cipher.processBlocks(src, dst, blocks);
 
-        while (src.readableBytes() >= this.blockSize && dst.writableBytes() >= this.blockSize) {
-            //encrypt whole blocks directly from the source buffer as long as possible
-            this.cipher.processBlock(src, dst);
-        }
-
         if (src.isReadable()) {
             //buffer any remaining data after destination buffer fills up
-            this.buffer.writeBytes(src);
+            this.buffer.writeBytes(src, Math.min(src.readableBytes(), this.blockSize));
         }
     }
 

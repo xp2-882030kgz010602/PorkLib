@@ -44,6 +44,12 @@ public interface PBlockCipher extends PCipher {
         }
     }
 
+    @Override
+    default boolean flush(@NonNull ByteBuf dst) {
+        //block ciphers generally don't have a buffer
+        return true;
+    }
+
     /**
      * Processes a single block.
      * <p>

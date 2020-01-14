@@ -19,7 +19,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.crypto.cipher.block.PBlockCipher;
-import net.daporkchop.lib.crypto.generic.ISimpleHeapCipher;
+import net.daporkchop.lib.crypto.generic.IHeapCipher;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
@@ -27,7 +27,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  *
  * @author DaPorkchop_
  */
-public interface ISimpleHeapBlockCipher extends PBlockCipher, ISimpleHeapCipher {
+public interface IHeapBlockCipher extends PBlockCipher, IHeapCipher {
     /**
      * Process one block of input from the array in and write it to the out array.
      *
@@ -36,7 +36,7 @@ public interface ISimpleHeapBlockCipher extends PBlockCipher, ISimpleHeapCipher 
      * @param out    the array the output data will be copied into
      * @param outOff the offset into the out array the output will start at
      */
-    void processHeapBlock(byte[] in, int inOff, byte[] out, int outOff);
+    void processHeapBlock(@NonNull byte[] in, int inOff, @NonNull byte[] out, int outOff);
 
     /**
      * Process a given number of blocks of input from the array in and write them to the out array.
@@ -47,11 +47,13 @@ public interface ISimpleHeapBlockCipher extends PBlockCipher, ISimpleHeapCipher 
      * @param outOff the offset into the out array the output will start at
      * @param blocks the number of blocks to process
      */
-    default void processHeapBlocks(byte[] in, int inOff, byte[] out, int outOff, int blocks)    {
+    default void processHeapBlocks(@NonNull byte[] in, int inOff, @NonNull byte[] out, int outOff, int blocks)    {
         if (blocks < 0) {
             throw new IllegalArgumentException(String.valueOf(blocks));
         } else if (blocks == 0) {
             return;
+        } else if (blocks == 1) {
+            this.processHeapBlock(in, inOff, out, outOff);
         } else {
             final int blockSize = this.blockSize();
             PorkUtil.assertInRangeLen(in.length, inOff, blocks * blockSize);
@@ -138,35 +140,47 @@ public interface ISimpleHeapBlockCipher extends PBlockCipher, ISimpleHeapCipher 
         if (srcArray != globalBuffer && dstArray != globalBuffer)   {
             //neither buffer is direct, we can do everything in one go on heap
             this.processHeapBlocks(srcArray, srcArrayOffset, dstArray, dstArrayOffset, blocks);
-        }
-        for (int i = 0; i < blocks; i++) {
-            if (srcArray == globalBuffer) {
-                src.readBytes(globalBuffer);
-            } else {
-                src.skipBytes(blockSize);
-            }
+            src.skipBytes(blocks * blockSize);
+            dst.writerIndex(dst.writerIndex() + blocks * blockSize);
+        } else {
+            for (int i = 0; i < blocks; i++) {
+                if (srcArray == globalBuffer) {
+                    src.readBytes(globalBuffer);
+                } else {
+                    src.skipBytes(blockSize);
+                }
 
-            this.processHeapBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
+                this.processHeapBlock(srcArray, srcArrayOffset, dstArray, dstArrayOffset);
 
-            if (srcArray != globalBuffer) {
-                srcArrayOffset += blockSize;
-            }
-            if (dstArray == globalBuffer) {
-                dst.writeBytes(dstArray);
-            } else {
-                dst.writerIndex(dst.writerIndex() + blockSize);
-                dstArrayOffset += blockSize;
+                if (srcArray != globalBuffer) {
+                    srcArrayOffset += blockSize;
+                }
+                if (dstArray == globalBuffer) {
+                    dst.writeBytes(dstArray);
+                } else {
+                    dst.writerIndex(dst.writerIndex() + blockSize);
+                    dstArrayOffset += blockSize;
+                }
             }
         }
     }
+    @Override
+    default boolean hasBuffer() {
+        return false;
+    }
 
     @Override
-    default void release() throws AlreadyReleasedException {
-        //no-op
+    default int bufferedCount() {
+        return 0;
     }
 
     @Override
     default boolean direct() {
         return false;
+    }
+
+    @Override
+    default void release() throws AlreadyReleasedException {
+        //no-op
     }
 }
