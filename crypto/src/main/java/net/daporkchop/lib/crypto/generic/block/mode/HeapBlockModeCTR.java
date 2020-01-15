@@ -95,7 +95,7 @@ public final class HeapBlockModeCTR implements IHeapBlockCipher, IDelegatingCiph
         final int bufOff = in == out ? 0 : outOff;
 
         //encrypt block
-        this.delegate.processHeapBlock(this.iv, 0, buffer, 0);
+        this.delegate.processHeapBlock(this.iv, 0, buffer, bufOff);
 
         //xor with data
         if ((blockSize & 0x7) == 0) {
@@ -130,8 +130,9 @@ public final class HeapBlockModeCTR implements IHeapBlockCipher, IDelegatingCiph
             this.processHeapBlock(in, inOff, out, outOff);
         } else {
             final int blockSize = this.blockSize();
-            PorkUtil.assertInRangeLen(in.length, inOff, blocks * blockSize);
-            PorkUtil.assertInRangeLen(out.length, outOff, blocks * blockSize);
+            final int totalSize = blocks * blockSize;
+            PorkUtil.assertInRangeLen(in.length, inOff, totalSize);
+            PorkUtil.assertInRangeLen(out.length, outOff, totalSize);
             if (in == out) {
                 //if arrays are the same, process each block individually
                 for (int i = 0; i < blocks; i++, inOff += blockSize, outOff += blockSize) {
@@ -139,14 +140,31 @@ public final class HeapBlockModeCTR implements IHeapBlockCipher, IDelegatingCiph
                 }
             } else {
                 //bulk processing
-                for (int i = 0; i < blocks; i++)    {
-                    this.delegate.processHeapBlock(this.iv, 0, out, outOff + i * blockSize);
+                for (int i = 0; i < totalSize; i += blockSize)    {
+                    this.delegate.processHeapBlock(this.iv, 0, out, outOff + i);
 
                     //increment counter
                     PUnsafe.putLong(this.iv, PUnsafe.ARRAY_BYTE_BASE_OFFSET + blockSize - 8L, fixOrder(this.base + (++this.position)));
                 }
 
-                //TODO
+                //xor with data
+                if ((blockSize & 0x7) == 0) {
+                    //if a multiple of 8, xor entire words at a time
+                    for (long i = 0L; i < totalSize; i += 8L) {
+                        //we don't need to worry about byte ordering since we're just XOR-ing the data
+                        PUnsafe.putLong(
+                                out,
+                                PUnsafe.ARRAY_BYTE_BASE_OFFSET + i + outOff,
+                                PUnsafe.getLong(out, PUnsafe.ARRAY_BYTE_BASE_OFFSET + i + outOff)
+                                        ^ PUnsafe.getLong(in, PUnsafe.ARRAY_BYTE_BASE_OFFSET + i + inOff)
+                        );
+                    }
+                } else {
+                    //xor bytewise
+                    for (int i = 0; i < totalSize; i++) {
+                        out[i + outOff] ^= in[i + inOff];
+                    }
+                }
             }
         }
     }
