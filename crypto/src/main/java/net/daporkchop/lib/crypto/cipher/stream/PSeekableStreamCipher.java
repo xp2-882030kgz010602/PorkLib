@@ -13,24 +13,12 @@
  *
  */
 
-package net.daporkchop.lib.crypto.generic;
-
-import net.daporkchop.lib.crypto.cipher.PCipher;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+package net.daporkchop.lib.crypto.cipher.stream;
 
 /**
- * A base implementation of a simple {@link PCipher} backed by heap memory.
+ * An extension of {@link PStreamCipher} that provides random access to data.
  *
  * @author DaPorkchop_
  */
-public interface IHeapCipher extends PCipher {
-    @Override
-    default boolean direct() {
-        return false;
-    }
-
-    @Override
-    default void release() throws AlreadyReleasedException {
-        //no-op
-    }
+public interface PSeekableStreamCipher extends PStreamCipher {
 }

@@ -29,6 +29,11 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
  */
 public interface IHeapBlockCipher extends PBlockCipher, IHeapCipher {
     /**
+     * @return a {@code byte[]} the same size as this cipher's block size, to be used as a temporary buffer when using direct buffers
+     */
+    byte[] globalBuffer();
+
+    /**
      * Process one block of input from the array in and write it to the out array.
      *
      * @param in     the array containing the input data
@@ -172,15 +177,5 @@ public interface IHeapBlockCipher extends PBlockCipher, IHeapCipher {
     @Override
     default int bufferedCount() {
         return 0;
-    }
-
-    @Override
-    default boolean direct() {
-        return false;
-    }
-
-    @Override
-    default void release() throws AlreadyReleasedException {
-        //no-op
     }
 }

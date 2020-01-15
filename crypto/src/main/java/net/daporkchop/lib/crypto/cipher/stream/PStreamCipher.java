@@ -13,10 +13,9 @@
  *
  */
 
-package net.daporkchop.lib.crypto.cipher;
+package net.daporkchop.lib.crypto.cipher.stream;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+import net.daporkchop.lib.crypto.cipher.PCipher;
 
 /**
  * An extension of {@link PCipher} that provides symmetric encryption of data in fixed-size blocks.
@@ -25,12 +24,35 @@ import lombok.NonNull;
  */
 public interface PStreamCipher extends PCipher {
     /**
-     * Processes the given data.
-     * <p>
-     * This will read, process and write data until either the source buffer is empty or the destination buffer is full.
+     * Processes the given byte.
      *
-     * @param src the {@link ByteBuf} to read data from
-     * @param dst the {@link ByteBuf} to write data to
+     * @param in the input byte to process
+     * @return the processed byte
      */
-    void processStreaming(@NonNull ByteBuf src, @NonNull ByteBuf dst);
+    byte process(byte in);
+
+    @Override
+    default boolean hasBuffer() {
+        return false;
+    }
+
+    @Override
+    default int bufferedCount() {
+        return 0;
+    }
+
+    @Override
+    default int blockSize() {
+        return -1;
+    }
+
+    @Override
+    default boolean usesBlocks() {
+        return false;
+    }
+
+    @Override
+    default int roundUpToBlockSize(int value) {
+        return value;
+    }
 }
